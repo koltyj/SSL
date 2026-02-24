@@ -82,39 +82,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUN-01 | — | Pending |
-| FOUN-02 | — | Pending |
-| FOUN-03 | — | Pending |
-| FOUN-04 | — | Pending |
-| PT-01 | — | Pending |
-| PT-02 | — | Pending |
-| PT-03 | — | Pending |
-| PT-04 | — | Pending |
-| PT-05 | — | Pending |
-| PT-06 | — | Pending |
-| PT-07 | — | Pending |
-| PT-08 | — | Pending |
-| PT-09 | — | Pending |
-| ABL-01 | — | Pending |
-| ABL-02 | — | Pending |
-| ABL-03 | — | Pending |
-| ABL-04 | — | Pending |
-| ABL-05 | — | Pending |
-| ABL-06 | — | Pending |
-| ABL-07 | — | Pending |
-| ABL-08 | — | Pending |
-| BRDG-01 | — | Pending |
-| BRDG-02 | — | Pending |
-| BRDG-03 | — | Pending |
-| ADV-01 | — | Pending |
-| ADV-02 | — | Pending |
-| ADV-03 | — | Pending |
+| FOUN-01 | Phase 1 | Pending |
+| FOUN-02 | Phase 1 | Pending |
+| FOUN-03 | Phase 1 | Pending |
+| FOUN-04 | Phase 1 | Pending |
+| PT-01 | Phase 2 | Pending |
+| PT-02 | Phase 2 | Pending |
+| PT-03 | Phase 2 | Pending |
+| PT-04 | Phase 2 | Pending |
+| PT-05 | Phase 2 | Pending |
+| PT-06 | Phase 2 | Pending |
+| PT-07 | Phase 2 | Pending |
+| PT-08 | Phase 2 | Pending |
+| PT-09 | Phase 2 | Pending |
+| ABL-01 | Phase 3 | Pending |
+| ABL-02 | Phase 3 | Pending |
+| ABL-03 | Phase 3 | Pending |
+| ABL-04 | Phase 3 | Pending |
+| ABL-05 | Phase 3 | Pending |
+| ABL-06 | Phase 3 | Pending |
+| ABL-07 | Phase 3 | Pending |
+| ABL-08 | Phase 3 | Pending |
+| BRDG-01 | Phase 4 | Pending |
+| BRDG-02 | Phase 4 | Pending |
+| BRDG-03 | Phase 3 | Pending |
+| ADV-01 | Phase 4 | Pending |
+| ADV-02 | Phase 4 | Pending |
+| ADV-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 — traceability filled after roadmap creation*
