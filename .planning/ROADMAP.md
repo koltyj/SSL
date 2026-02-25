@@ -28,7 +28,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. MatrixRemote connects to the console over Ethernet and the console responds to MatrixRemote commands
   3. macOS Local Network permissions are granted for ipMIDI, and all Matrix MIDI ports are visible as CoreMIDI ports in Audio MIDI Setup
   4. ipMIDI multicast traffic (225.0.0.37) is confirmed routing to the Ethernet adapter connected to the console, not to Wi-Fi or any other adapter
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 01-01-PLAN.md — Infrastructure setup: firmware ID, software install, permissions, network topology, multicast routing, MIDI port visibility
+- [ ] 01-02-PLAN.md — Connection and DAW verification: MatrixRemote connection, Pro Tools HUI config, four-behavior pass/fail test
 
 ### Phase 2: Pro Tools HUI Bridge
 **Goal**: The SSL Matrix is a fully functional HUI control surface for Pro Tools — flying faders, automation write, transport, mute/solo/rec arm, scribble strips, banking, automation modes — all working, with the ConsoleStateManager actor in place as the foundation for adding Ableton in Phase 3
@@ -72,7 +75,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Compatibility Verification | 0/TBD | Not started | - |
+| 1. Compatibility Verification | 0/2 | Not started | - |
 | 2. Pro Tools HUI Bridge | 0/TBD | Not started | - |
 | 3. Ableton Live MCU + Daemon Shell | 0/TBD | Not started | - |
 | 4. Hardening and Differentiators | 0/TBD | Not started | - |
