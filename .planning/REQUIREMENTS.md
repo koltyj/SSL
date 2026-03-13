@@ -42,7 +42,7 @@ Note: DAW switching between Pro Tools and Ableton is handled by hardware buttons
 - [x] **AUDIT-01**: All 105 ssl-matrix-client dispatch handlers wire-tested against live console with pass/fail documented
 - [x] **AUDIT-02**: Soft key, V-pot, and SuperCue protocol capabilities mapped with confirmed working message codes
 - [x] **AUDIT-03**: Split board feasibility determined — can two DAW layers run simultaneously on different fader groups?
-- [ ] **AUDIT-04**: Capabilities document listing every confirmed feature, limitation, and protocol gap
+- [x] **AUDIT-04**: Capabilities document listing every confirmed feature, limitation, and protocol gap
 
 ### Console Surface Features
 
@@ -105,7 +105,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUDIT-01 | Phase 2 | Complete |
 | AUDIT-02 | Phase 2 | Complete |
 | AUDIT-03 | Phase 2 | Complete |
-| AUDIT-04 | Phase 2 | Pending |
+| AUDIT-04 | Phase 2 | Complete |
 | ADV-01 | Phase 3 | Pending |
 | ADV-02 | Phase 3 | Pending |
 | ADV-03 | Phase 3 | Pending |
@@ -121,9 +121,9 @@ Deferred to future release. Tracked but not in current roadmap.
 - v1 requirements: 31 total
 - Mapped to phases: 31
 - Unmapped: 0
-- Complete: 21 (Phase 1 + native DAW control)
-- Remaining: 10
+- Complete: 22 (Phase 1 + native DAW control + AUDIT-04)
+- Remaining: 9
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-03-11 — recalibrated after Phase 1 discoveries; PT/ABL requirements verified natively*
+*Last updated: 2026-03-13 — AUDIT-01, AUDIT-02, AUDIT-03, AUDIT-04 complete (Phase 2 capabilities audit finished)*

@@ -45,8 +45,8 @@ Plans:
   4. A capabilities document exists listing every confirmed feature, every known limitation, and every protocol gap
 **Plans**: 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Tier 0-2 handler audit (connection, read-only, non-destructive mutations) + feature feasibility probes (soft keys, V-pot, SuperCue, split board)
-- [ ] 02-02-PLAN.md — Tier 3-4 handler audit (state mutations, high-risk ops) + finalize CAPABILITIES.md
+- [x] 02-01-PLAN.md — Tier 0-2 handler audit (connection, read-only, non-destructive mutations) + feature feasibility probes (soft keys, V-pot, SuperCue, split board)
+- [x] 02-02-PLAN.md — Tier 3-4 handler audit (state mutations, high-risk ops) + finalize CAPABILITIES.md
 
 ### Phase 3: Console Surface Features
 **Goal**: Soft keys send DAW commands, V-pot encoders control parameters, and SuperCue/Auto-Mon integrates with the recording workflow — all through ssl-matrix-client
@@ -89,7 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Compatibility Verification | 2/2 | Complete | 2026-03-11 |
-| 2. Capabilities Audit | 1/2 | In Progress|  |
+| 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
 | 3. Console Surface Features | 0/TBD | Not started | - |
 | 4. Advanced Workflow Features | 0/TBD | Not started | - |
 | 5. Native macOS Dock App | 0/TBD | Not started | - |
