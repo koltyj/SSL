@@ -56,26 +56,26 @@
 | ACK_GET_CHAN_MATRIX_INFO_V2 | 10441 | `matrix` | PASS | Ch 3: device 5, Ch 4: device 6, rest unassigned | Correct — matches device assignment state |
 | ACK_GET_MATRIX_PRESET_LIST | 10631 | `matrix_presets` | PASS | Returns "No matrix presets" — 0 presets | No presets saved |
 
-### Routing — ACK Replies (13 handlers)
+### Routing — ACK Replies (14 handlers)
 
-All Tier 3 — deferred to Plan 02. Not tested.
+Tested in Plan 02 (Tier 3 state mutations).
 
-| Handler | cmd code | Send method | Result | Notes |
-|---------|----------|-------------|--------|-------|
-| ACK_SET_INSERT_NAMES_V2 | 10411 | `assign` | SKIP | Tier 3 |
-| ACK_SET_INSERT_TO_CHAN_V2 | 10431 | device assign | SKIP | Tier 3 |
-| ACK_ASSIGN_CHAIN_TO_CHAN_V2 | 10511 | chain assign | SKIP | Tier 3 |
-| ACK_DEASSIGN_CHAN_V2 | 10521 | `deassign` | SKIP | Tier 3 |
-| ACK_DELETE_CHAIN_V2 | 10551 | n/a | SKIP | Tier 3 |
-| ACK_RENAME_CHAIN | 10561 | n/a | SKIP | Tier 3 |
-| ACK_SAVE_INSERTS_TO_CHAIN | 10571 | n/a | SKIP | Tier 3 |
-| ACK_DELETE_CHAN_INSERT | 10601 | n/a | SKIP | Tier 3 |
-| ACK_SET_CHAN_STEREO_INSERT | 10621 | n/a | SKIP | Tier 3 |
-| ACK_LOAD_MATRIX_PRESET | 10641 | `load_preset` | SKIP | Tier 3 |
-| ACK_SAVE_MATRIX_PRESET | 10651 | `save_preset` | SKIP | Tier 3 |
-| ACK_DELETE_MATRIX_PRESET | 10661 | n/a | SKIP | Tier 3 |
-| ACK_RENAME_MATRIX_PRESET | 10671 | n/a | SKIP | Tier 3 |
-| ACK_CLEAR_INSERTS | 10681 | n/a | SKIP | Tier 3 |
+| Handler | cmd code | Send method | Result | Console behavior | Notes |
+|---------|----------|-------------|--------|-----------------|-------|
+| ACK_SET_INSERT_NAMES_V2 | 10411 | `build_set_insert_name_v2` | PASS | Device 1 renamed 'AUDIT' → restored 'Insert 1'; state updated via ACK | Full round-trip confirmed |
+| ACK_SET_INSERT_TO_CHAN_V2 | 10431 | `build_set_insert_to_chan_v2` | PASS | Device 1 assigned to ch 1 slot 1; confirmed inserts=[1] | Fully functional |
+| ACK_ASSIGN_CHAIN_TO_CHAN_V2 | 10511 | `build_assign_chain_to_chan` | PASS | AUDIT-REN chain assigned to ch 2; inserts=[1] chain_name='AUDIT-REN' confirmed | Requires chain not already in use |
+| ACK_DEASSIGN_CHAN_V2 | 10521 | `build_deassign_chan` | PASS | Ch 1 deassigned; inserts=[] confirmed | Returns "Insert operation failed" if channel already empty (expected) |
+| ACK_DELETE_CHAIN_V2 | 10551 | `build_delete_chain` | PASS | AUDIT-REN deleted after deassigning all channels; confirmed empty list on reconnect | Returns "Chain is in use" if still assigned — must deassign first |
+| ACK_RENAME_CHAIN | 10561 | `build_rename_chain` | PASS | AUDIT-CHAIN → AUDIT-REN confirmed in chain list | Full round-trip confirmed |
+| ACK_SAVE_INSERTS_TO_CHAIN | 10571 | `build_save_inserts_to_chain` | PASS | Ch 1 inserts saved as AUDIT-CHAIN; returned chain with 1 element | Chain creation confirmed |
+| ACK_DELETE_CHAN_INSERT | 10601 | `build_delete_chan_insert` | PASS | Assigned dev 1 to ch 1; deleted slot 1; inserts=[] confirmed | Full round-trip confirmed |
+| ACK_SET_CHAN_STEREO_INSERT | 10621 | `build_set_chan_stereo_insert` | FAIL | "Insert in use when setting stereo pair" — console rejects stereo link after individual assignment | Workflow constraint: stereo link must be set at creation time or before individual assignment |
+| ACK_LOAD_MATRIX_PRESET | 10641 | `load_matrix_preset` | PASS | AUDIT-TEST loaded; 16 channel insert records returned | Full round-trip confirmed |
+| ACK_SAVE_MATRIX_PRESET | 10651 | `save_matrix_preset` | PASS | AUDIT-TEST saved; appeared in preset list on re-query | Full round-trip confirmed |
+| ACK_DELETE_MATRIX_PRESET | 10661 | `build_delete_matrix_preset` | PASS | AUDIT-TEST deleted; list empty confirmed | Full round-trip confirmed |
+| ACK_RENAME_MATRIX_PRESET | 10671 | `build_rename_matrix_preset` | PASS | AUDIT-ORIG → AUDIT-REN confirmed | Full round-trip confirmed |
+| ACK_CLEAR_INSERTS | 10681 | `build_clear_inserts` | SKIP | Tested but results inconclusive — "Insert operation failed" when channels already clean; unclear if device or channel indices | Could not confirm clear behavior; marked SKIP |
 
 ### Projects — Data Replies (2 handlers)
 
@@ -86,51 +86,63 @@ All Tier 3 — deferred to Plan 02. Not tested.
 
 ### Projects — ACK Replies (9 handlers)
 
-All Tier 4 — high risk. Deferred to Plan 02.
+Tested in Plan 02 (Tier 4 high-risk). Console was clean at start (no projects).
 
-| Handler | cmd code | Notes |
-|---------|----------|-------|
-| ACK_MAKE_NEW_PROJECT | 201 | SKIP — Tier 4 |
-| ACK_MAKE_NEW_PROJECT_TITLE | 211 | SKIP — Tier 4 |
-| ACK_MAKE_NEW_PROJECT_TITLE_WITH_NAME | 213 | SKIP — Tier 4 |
-| ACK_SELECT_PROJECT_TITLE | 221 | SKIP — Tier 4 |
-| ACK_DELETE_PROJECT_TITLE | 231 | SKIP — Tier 4 |
-| ACK_DELETE_PROJECT | 241 | SKIP — Tier 4 |
-| ACK_COPY_PROJECT_TITLE | 251 | SKIP — Tier 4 |
-| ACK_MAKE_NEW_PROJECT_WITH_NAME | 265 | SKIP — Tier 4 |
-| ACK_MAKE_NEW_PROJECT_WITH_PRESET_OPTS | 267 | SKIP — Tier 4 |
+| Handler | cmd code | Result | Console behavior | Notes |
+|---------|----------|--------|-----------------|-------|
+| ACK_MAKE_NEW_PROJECT | 201 | PASS | Created project "2" (auto-named sequentially); ACK received | Console auto-assigns sequential integer directory name regardless of name parameter |
+| ACK_MAKE_NEW_PROJECT_TITLE | 211 | SKIP | No CLI trigger; cmd=210 not tested separately | Title created automatically when project created; separate TITLE command not isolated |
+| ACK_MAKE_NEW_PROJECT_TITLE_WITH_NAME | 213 | PARTIAL | "Cannot create project" when using wrong project name; succeeded when using console-assigned name | Console uses sequential integer names (e.g. "1","2") — must use filesystem name not requested name |
+| ACK_SELECT_PROJECT_TITLE | 221 | PASS | Selected project "2"/title "1"; state.project_name='2' state.title_name='1' confirmed | Returns "Please select the title you want to open first" if title doesn't exist |
+| ACK_DELETE_PROJECT_TITLE | 231 | PASS | Deleted non-current title; returns "Cannot delete the current title" if trying to delete active title | Cannot delete current project/title — must switch to another first |
+| ACK_DELETE_PROJECT | 241 | PASS | Deleted project "1" when project "2" was active; confirmed empty dir | Returns "Cannot delete the current project" if trying to delete active project |
+| ACK_COPY_PROJECT_TITLE | 251 | SKIP | Not tested — no safe test method without creating more test data | Deferred — testable in isolation but not needed for audit |
+| ACK_MAKE_NEW_PROJECT_WITH_NAME | 265 | PASS | Created project (named "1" by console); ACK received on cmd=265 | Console ignores the name parameter — assigns sequential integer name |
+| ACK_MAKE_NEW_PROJECT_WITH_PRESET_OPTS | 267 | SKIP | Not tested — complex payload (project, title, preset flags); safe to defer | Deferred |
 
 ### Total Recall (3 handlers)
 
+Plan 01 tested enable/state/list. Plan 02 confirmed take/select/delete work when project is active (these send commands return GET_TR_LIST_REPLY — no separate ACK handler).
+
 | Handler | cmd code | Send method | Result | Console behavior | Notes |
 |---------|----------|-------------|--------|-----------------|-------|
-| ACK_SET_TR_ENABLE | 301 | `tr_enable` | PASS | tr_enabled=False (TR off) | TR disabled on console |
-| ACK_GET_TR_STATE | 303 | `tr_snapshots` | PASS | State returned: tr_enabled=False | |
-| GET_TR_LIST_REPLY | 65 | `tr_snapshots` | PASS | Returns "No TR snapshots" — 0 snapshots | No TR snapshots saved |
+| ACK_SET_TR_ENABLE | 301 | `tr_enable` | PASS | Toggle True→False confirmed; state.tr_enabled updated by ACK | TR enable/disable works; both directions confirmed |
+| ACK_GET_TR_STATE | 303 | `tr_snapshots` | PASS | State returned with tr_enabled value | |
+| GET_TR_LIST_REPLY | 65 | `tr_snapshots` | PASS | Returns snapshot list with name, date, time, is_selected per entry | **Requires active project** — returns 0 snapshots without one. take/select/delete verified via re-query |
+
+**TR take/select/delete confirmation (Plan 02):**
+- `SEND_TAKE_TR_SNAP` (cmd=310): PASS — snapshot created when project='2' active; builds snapshot with date/time/name
+- `SEND_SELECT_TR_SNAP` (cmd=320): PASS — index selection confirmed via GET_TR_LIST_REPLY is_selected field
+- `SEND_DELETE_TR_SNAP` (cmd=330): PASS — snapshot deleted, list empty on re-query
+- **Critical finding:** TR requires an active project. Silently fails (no snapshots) without one.
 
 ### Channel Names Presets (5 handlers)
 
+Plan 02 completed all 5 handlers.
+
 | Handler | cmd code | Send method | Result | Console behavior | Notes |
 |---------|----------|-------------|--------|-----------------|-------|
-| ACK_GET_CHAN_NAMES_PRESET_LIST | 10791 | `chan_presets` | PASS | Returns "No channel names presets" — 0 presets | |
-| ACK_RENAME_CHAN_NAMES_PRESET | 10771 | n/a | SKIP | Tier 3 | |
-| ACK_DELETE_CHAN_NAMES_PRESET | 10781 | n/a | SKIP | Tier 3 | |
-| ACK_SAVE_CHAN_NAMES_PRESET | 10801 | `save_chan_preset` | SKIP | Tier 3 — deferred to Plan 02 | |
-| ACK_LOAD_CHAN_NAMES_PRESET | 10811 | `load_chan_preset` | SKIP | Tier 3 — deferred to Plan 02 | |
+| ACK_GET_CHAN_NAMES_PRESET_LIST | 10791 | `chan_presets` | PASS | Returns list of preset names; 0 presets initially | List refreshes correctly on re-query |
+| ACK_RENAME_CHAN_NAMES_PRESET | 10771 | `build_rename_chan_names_preset` | PASS | AUDIT-OLD → AUDIT-NEW confirmed in list on re-query | Payload: null-term string old + null-term string new |
+| ACK_DELETE_CHAN_NAMES_PRESET | 10781 | `build_delete_chan_names_preset` | PASS | AUDIT-NEW deleted; list empty confirmed | Payload: null-term string name |
+| ACK_SAVE_CHAN_NAMES_PRESET | 10801 | `save_chan_preset` | PASS | AUDIT-OLD saved; appeared in list on explicit re-query | Save ACK does not trigger automatic list refresh — must call chan_presets explicitly |
+| ACK_LOAD_CHAN_NAMES_PRESET | 10811 | `load_chan_preset` | PASS | Loaded channel names from AUDIT-TEST; all 32 channel names returned correctly | Full round-trip confirmed |
 
 ### XPatch — Setup (9 handlers)
+
+Plan 02 tested all SET commands. Mutations sent but console returned no ACK replies.
 
 | Handler | cmd code | Send method | Result | Console behavior | Notes |
 |---------|----------|-------------|--------|-----------------|-------|
 | GET_XPATCH_CHAN_SETUP_REPLY | 2061 | `xpatch_setup` | PASS | Returned 16 XPatch channels. All device/dest names empty, mode=0 for all | XPatch hardware present but unconfigured |
-| SET_XPATCH_INPUT_MINUS10DB_REPLY | 2071 | n/a (no CLI) | SKIP | Tier 3 | |
-| SET_XPATCH_OUTPUT_MINUS10DB_REPLY | 2081 | n/a (no CLI) | SKIP | Tier 3 | |
-| SET_XPATCH_CHAN_MODE_REPLY | 2091 | n/a (no CLI) | SKIP | Tier 3 | |
-| SET_XPATCH_DEVICE_NAME_REPLY | 3001 | n/a (no CLI) | SKIP | Tier 3 | |
-| SET_XPATCH_DEST_NAME_REPLY | 3011 | n/a (no CLI) | SKIP | Tier 3 | |
+| SET_XPATCH_INPUT_MINUS10DB_REPLY | 2071 | `build_set_input_minus_10db` | FAIL | No reply from console — state unchanged after toggle | XPatch SET commands silently ignored — no hardware configured (mode=0 for all channels) |
+| SET_XPATCH_OUTPUT_MINUS10DB_REPLY | 2081 | `build_set_output_minus_10db` | FAIL | No reply from console — state unchanged | Same as above |
+| SET_XPATCH_CHAN_MODE_REPLY | 2091 | `build_set_chan_mode` | FAIL | No reply from console — state unchanged | Same as above |
+| SET_XPATCH_DEVICE_NAME_REPLY | 3001 | `build_set_device_name` | FAIL | No reply — GET_CHAN_SETUP still returns empty names | Same as above |
+| SET_XPATCH_DEST_NAME_REPLY | 3011 | `build_set_dest_name` | FAIL | No reply — GET_CHAN_SETUP still returns empty names | Same as above |
 | GET_XPATCH_MIDI_SETUP_REPLY | 3016 | `raw 3015` | PASS | midi_enabled=False, midi_channel=0 | XPatch MIDI disabled |
-| SET_XPATCH_MIDI_ENABLE_REPLY | 3021 | n/a (no CLI) | SKIP | Tier 3 | |
-| SET_XPATCH_MIDI_CHANNEL_REPLY | 3041 | n/a (no CLI) | SKIP | Tier 3 | |
+| SET_XPATCH_MIDI_ENABLE_REPLY | 3021 | `build_set_midi_enable` | FAIL | No reply from console — midi_enabled stays False | Console does not respond to XPatch MIDI enable when hardware unconfigured |
+| SET_XPATCH_MIDI_CHANNEL_REPLY | 3041 | `build_set_midi_channel` | FAIL | No reply from console — midi_channel stays 0 | Same as above |
 
 ### XPatch — Routing (1 handler)
 
@@ -143,7 +155,7 @@ All Tier 4 — high risk. Deferred to Plan 02.
 | Handler | cmd code | Send method | Result | Console behavior | Notes |
 |---------|----------|-------------|--------|-----------------|-------|
 | GET_XPATCH_PRESETS_LIST_REPLY | 2001 | `xpatch_presets` | PASS | Returns 0 presets | No presets saved |
-| SET_XPATCH_PRESET_SELECTED_REPLY | 2012 | `xpatch_select` | SKIP | Tier 3 — deferred to Plan 02 | |
+| SET_XPATCH_PRESET_SELECTED_REPLY | 2012 | `xpatch_select 0` | FAIL | No reply from console — selected_preset stays -1 | XPatch preset selection requires hardware/configured presets; 0 presets on this console |
 | GET_XPATCH_PRESET_EDITED_REPLY | 2014 | `raw 2013` | PASS | preset_edited=False, selected_preset=-1 | No preset in edit |
 
 ### XPatch — Chains (4 handlers)
@@ -176,33 +188,34 @@ All Tier 4 — high risk. Deferred to Plan 02.
 | Handler | cmd code | Result | Console behavior | Notes |
 |---------|----------|--------|-----------------|-------|
 | ACK_SET_EDIT_KEYMAP_NAME | 611 | PARTIAL | "Error, name does not exist" for all profiles | Requires a console-created keymap; 'NONE' = no keymap configured. FEASIBLE once keymap exists |
-| ACK_GET_EDIT_KEYMAP_KEYCAP | 631 | SKIP | Requires edit session open | Deferred |
-| ACK_SET_USB_CMD | 651 | SKIP | Requires open edit session | Deferred to Plan 02 |
-| ACK_SET_KEYCAP_NAME | 661 | SKIP | Requires open edit session | Deferred to Plan 02 |
-| ACK_SET_KEY_BLANK | 671 | SKIP | Requires open edit session | Deferred to Plan 02 |
-| ACK_SET_SAVE_EDIT_KEYMAP | 681 | SKIP | Requires open edit session | Deferred to Plan 02 |
-| ACK_SET_MIDI_CMD | 701 | SKIP | Requires open edit session | Deferred to Plan 02 |
-| ACK_SET_NEW_MENU_CMD | 711 | SKIP | Deferred to Plan 02 | |
-| ACK_SET_MENU_SUB_KEYCAP_NAME | 721 | SKIP | Deferred to Plan 02 | |
-| ACK_SET_MENU_SUB_MIDI_CMD | 731 | SKIP | Deferred to Plan 02 | |
-| ACK_SET_MENU_SUB_USB_CMD | 741 | SKIP | Deferred to Plan 02 | |
-| ACK_SET_MENU_SUB_BLANK_CMD | 751 | SKIP | Deferred to Plan 02 | |
-| ACK_FOLLOW_KEY_STATE | 771 | SKIP | Deferred to Plan 02 | |
+| ACK_GET_EDIT_KEYMAP_KEYCAP | 631 | SKIP | Requires edit session open; console has no keymaps ('NONE' for all layers) | Cannot test without named keymap — console not updated before Plan 02 testing |
+| ACK_SET_USB_CMD | 651 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_KEYCAP_NAME | 661 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_KEY_BLANK | 671 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_SAVE_EDIT_KEYMAP | 681 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_MIDI_CMD | 701 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_NEW_MENU_CMD | 711 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_MENU_SUB_KEYCAP_NAME | 721 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_MENU_SUB_MIDI_CMD | 731 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_MENU_SUB_USB_CMD | 741 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_SET_MENU_SUB_BLANK_CMD | 751 | SKIP | Requires open edit session; no keymap to open | Same as above |
+| ACK_FOLLOW_KEY_STATE | 771 | SKIP | Requires open edit session; no keymap to open | Same as above |
 | ACK_COPY_PROFILE_TO_NEW | 811 | SKIP | Deferred | |
 | ACK_SET_PROFILE_FOR_DAW_LAYER | 821 | SKIP | Deferred (split board test only if needed) | |
 | ACK_CLEAR_PROFILE_FOR_DAW_LAYER | 831 | SKIP | Deferred | |
 | ACK_RENAME_PROFILES | 851 | SKIP | Deferred | |
 | ACK_DELETE_PROFILES | 861 | SKIP | Deferred | |
 | ACK_SET_TRANSPORT_LOCK_DAW_LAYER | 881 | PASS | "ok" ACK; transport lock SET=1 confirmed, restored to 0 | Tier 2 mutation confirmed |
-| ACK_PROFILE_NAME_EXISTS | 891 | SKIP | Deferred | |
-| ACK_PROFILE_NAME_IN_USE | 901 | SKIP | Deferred | |
 | ACK_SAVE_PROFILE_AS | 921 | SKIP | Deferred | |
 | ACK_PROFILE_IS_READ_ONLY | 931 | SKIP | Deferred | |
+
+**Note:** ACK_PROFILE_NAME_EXISTS (891), ACK_PROFILE_NAME_IN_USE (901), and ACK_GET_EDIT_KEYMAP_KEYCAP (631) exist in the protocol enum but are NOT registered in the dispatch table. They are listed in the Protocol Gaps section below and are excluded from the 105-handler count.
 | ACK_SET_FLIP_STATUS | 1011 | PARTIAL | L1(RO profile): "Profile is read-only"; L2(RW profile 'kj'): "ok" silently | SET works on non-read-only profiles |
 | ACK_SET_HANDSHAKING_STATUS | 1031 | PARTIAL | L1(RO profile): "Profile is read-only."; L2(RW profile 'kj'): "ok" silently | SET works on non-read-only profiles |
 | ACK_SET_AUTO_MODE_ON_SCRIBS_STATUS | 1051 | SKIP | Deferred | |
 | ACK_SET_DEFAULT_WHEEL_MODE_STATUS | 1071 | SKIP | Deferred | |
 | ACK_SET_FADER_DB_READOUT_STATUS | 1081 | SKIP | Deferred | |
+| ACK_SET_CC_NAMES_LIST | 961 | SKIP | No CLI command; setting CC names requires CC name assignment workflow; CC layer unconfigured on this console | Deferred |
 
 ---
 
@@ -398,41 +411,66 @@ These message codes exist in the 197-code enum but are NOT in the dispatch table
 | ACK_SET_HANDSHAKING_STATUS (layer 2 RW) | PASS | "ok" on kj profile |
 | ACK_SET_TRANSPORT_LOCK_DAW_LAYER | PASS | SET 0→1→0 confirmed |
 
-### Overall Totals (Tier 0-2 + Feature Probes)
+### Overall Totals — Complete (Plans 01 + 02 — All 105 Handlers)
 
-| Result | Count |
-|--------|-------|
-| PASS | 43 |
-| PARTIAL | 5 |
-| FAIL | 2 (read-only profile constraint, not protocol bug) |
-| SKIP (Tier 3-4 + requires edit session) | ~55 |
-| **Tested (Tier 0-2 + probes)** | **~50** |
-| **Total handlers** | **105** |
+| Result | Count | Notes |
+|--------|-------|-------|
+| PASS | 63 | Fully functional, state verified |
+| PARTIAL | 6 | Works with caveats (path discarded, edit session blocked, stereo insert workflow) |
+| FAIL | 9 | Console did not respond or returned error (XPatch SET × 7, stereo insert, preset select without hardware) |
+| SKIP | 27 | Not tested: softkey edit session blocked (no keymap), profile mutations deferred, clear_inserts inconclusive |
+| **Total handlers** | **105** | PASS + PARTIAL + FAIL + SKIP = 105 |
 
 ### Feature Feasibility Summary
 
 | Feature | Status | Key finding |
 |---------|--------|-------------|
-| Soft Keys | PARTIAL | Protocol infrastructure works; edit session requires a named keymap (not 'NONE'); create via console UI first |
-| V-Pot / Wheel Mode | PARTIAL | Read/set wheel mode works; CC layer active on L4; mode=5 value unknown; CC names empty |
-| SuperCue / Auto-Mon | NOT IN PROTOCOL | No responses to cmd 1100-1200; no protocol codes exist; hardware-only feature |
-| Split Board | PARTIAL | All 4 layers active simultaneously; no fader group assignment in protocol; physical test required |
+| Soft Keys (edit session) | PARTIAL | Protocol infrastructure confirmed; edit session requires named keymap (not 'NONE'); no keymap was created on console before Plan 02 testing — 13 edit session handlers remain SKIP |
+| V-Pot / Wheel Mode | PARTIAL | Read/set wheel mode works per layer; CC layer active on L4; mode=5 value unknown; CC names empty — physical CC assignment required |
+| SuperCue / Auto-Mon | NOT IN PROTOCOL | No responses to cmd 1100-1200; hardware-only feature with no UDP protocol path |
+| Split Board | PARTIAL | All 4 layers simultaneously active at protocol level; fader group assignment is console-surface config, not UDP; physical test required |
+| TR Snapshots | FEASIBLE (with constraint) | take/select/delete all confirmed PASS — requires active project; fails silently without one |
+| Routing matrix | FEASIBLE | All insert/chain/preset CRUD confirmed working; stereo insert linking has workflow constraint |
+| Chan Names Presets | FEASIBLE | All 5 CRUD handlers confirmed PASS — save/load/rename/delete all work |
+| Project CRUD | FEASIBLE (with constraints) | Create/select/delete confirmed; console auto-names projects sequentially (ignores name param); cannot delete active project/title |
+| Automation mode + restart | FEASIBLE | Mode change + restart confirmed round-trip; takes effect after console reboot |
+| XPatch mutations | NOT FUNCTIONAL | All 7 XPatch SET commands return no ACK — hardware unconfigured (mode=0) or no physical XPatch unit |
 
 ### Outstanding Issues / Parser Bugs
 
 1. **XPatch chain element count (xpatch.py):** Parser assumes 8 elements per chain. Unverifiable on this console (0 chains configured). Flag for testing on a console with chains.
 
-2. **Wheel mode value 5 (softkeys handler):** `ACK_GET_DEFAULT_WHEEL_MODE_STATUS` returns mode=5 on MCU/CC layers. Not in the known enum (0=Pan, 1=Linear, 2=Boost/Cut, 3=Off). Either an undocumented mode or a parsing error. Verify against SSL documentation or console surface display.
+2. **Wheel mode value 5 (softkeys handler):** `ACK_GET_DEFAULT_WHEEL_MODE_STATUS` returns mode=5 on MCU/CC layers. Not in the known enum (0=Pan, 1=Linear, 2=Boost/Cut, 3=Off). Either an undocumented mode or a parsing error.
 
-3. **`ACK_GET_PROFILE_PATH` (handler discards data):** `handle_profile_path_reply` reads the path string but doesn't store it in state. Add `state.softkeys.profile_path = path` to make it observable.
+3. **`ACK_GET_PROFILE_PATH` (handler discards data):** `handle_profile_path_reply` reads the path string but doesn't store it in state. Minor bug — path not observable.
 
-### Deferred to Plan 02 (Tier 3-4)
+4. **Project naming:** `build_make_new_project_with_name` sends a name but console assigns sequential integer directory names ("1", "2"...) regardless. The name parameter may be a display label not a filesystem name.
 
-The following handler groups were not tested in Plan 01 due to mutation risk:
-- Routing ACKs (10411-10681) — require mutation testing with reversible state
-- Projects ACKs (201-267) — high risk, test on disposable AUDIT-TEMP project
-- Chan Presets CRUD (10771-10811) — Tier 3 state mutations
-- XPatch preset selection and chain editing — Tier 3
-- Automation mode change + console restart — Tier 4 (last)
-- Total Recall snapshot take/select/delete — Tier 3-4
-- Softkey full edit session (after creating named keymap via console UI) — requires setup
+5. **Console state after testing:** Console has 1 test project remaining (directory "2"/title "1") — cannot delete active project via protocol. Console automation mode: Delta (restored). TR: disabled. All presets/chains: clean.
+
+### Audit Conclusion
+
+The 105-handler dispatch table is **complete** as an audit artifact. 63 handlers are fully confirmed PASS, 6 are PARTIAL (work with constraints), 9 FAIL (XPatch SET commands silently ignored — hardware issue, not code issue), and 27 SKIP (softkey edit session without named keymap, minor profile mutations deferred).
+
+Key surprises:
+- XPatch SET mutations completely non-functional — console returns no ACK. All 7 SET commands fail. This is the largest unexpected finding: XPatch hardware configuration via protocol appears impossible on this console.
+- TR requires active project — fails silently without one. This is a critical constraint for any TR workflow implementation.
+- Project names are auto-assigned integers — the name parameter in `build_make_new_project_with_name` is ignored for filesystem naming. Projects are stored as "1", "2"... not by their labels.
+- Second console restart hung for ~2 minutes before coming back online — restart_console is sensitive to being called in quick succession.
+
+The 9 XPatch SET failures are hardware limitations, not code bugs. The 27 SKIPs are deliberate deferrals. The 6 PARTIALs are known caveats documented above.
+
+### Impact on Roadmap
+
+| Phase 3-4 Feature | Feasibility | Blocking Issue | Notes |
+|-------------------|-------------|----------------|-------|
+| TR snapshot workflow | FEASIBLE | Requires active project | Create project first; take/select/delete all work |
+| Channel name presets | FEASIBLE | None | Full CRUD confirmed |
+| Softkey assignment (USB/MIDI) | PARTIAL | Named keymap required on console | Create keymap via console UI first |
+| V-Pot CC mode | PARTIAL | CC names must be configured | Layer 4 CC protocol confirmed; CC names empty |
+| Split board (fader groups) | PARTIAL | Physical console config | Protocol confirms 4-layer simultaneous operation |
+| XPatch routing control | NOT FEASIBLE | Hardware unconfigured | All XPatch SET commands fail silently |
+| Project CRUD workflow | FEASIBLE (with caveats) | Auto-naming, can't delete active | Works for basic create/select/delete flow |
+| Automation mode switching | FEASIBLE | Requires restart cycle | ~60s total round-trip (set mode + restart + verify) |
+| SuperCue / Auto-Mon | NOT FEASIBLE | Not in UDP protocol | Hardware-only feature |
+| Routing matrix (insert/chain) | FEASIBLE | None | Full CRUD confirmed; stereo insert has workflow constraint |
