@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed Phase 2 — 02-02-PLAN.md user-verified, SUMMARY.md created, STATE updated
-last_updated: "2026-03-13T20:25:46.891Z"
+stopped_at: Completed 03-01-PLAN.md — cc_names bug fixed, wheel_mode and cc_names CLI commands added
+last_updated: "2026-03-13T21:04:23.252Z"
 last_activity: "2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off."
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 2
+  total_plans: 6
+  completed_plans: 3
   percent: 50
 ---
 
@@ -52,6 +52,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 *Updated after each plan completion*
 | Phase 02-capabilities-audit P01 | 3h | 2 tasks | 1 files |
 | Phase 02-capabilities-audit P02 | 26min | 1 task | 1 files |
+| Phase 03-console-surface-features P01 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 02-capabilities-audit]: TR snapshots require active project — critical workflow constraint for any future TR feature implementation
 - [Phase 02-capabilities-audit]: Project names are auto-assigned sequential integers by console — build_make_new_project_with_name name param sets display label, not filesystem name
 - [Phase 02-capabilities-audit]: Test project artifact (directory '2'/title '1') remains on console — cannot delete active project via protocol alone
+- [Phase 03-console-surface-features]: cc_names stored as flat list replaced wholesale on each reply (not keyed by layer/type)
+- [Phase 03-console-surface-features]: Wheel mode label mapping 0-3 only (Pan/Linear/Boost-Cut/Off); values 4-5 accepted by set but shown as Unknown on read
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T20:20:00.000Z
-Stopped at: Completed Phase 2 — 02-02-PLAN.md user-verified, SUMMARY.md created, STATE updated
+Last session: 2026-03-13T21:04:23.249Z
+Stopped at: Completed 03-01-PLAN.md — cc_names bug fixed, wheel_mode and cc_names CLI commands added
 Resume file: None
