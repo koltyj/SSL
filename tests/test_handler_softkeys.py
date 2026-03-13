@@ -11,11 +11,15 @@ from conftest import (
 )
 from ssl_matrix_client.handlers.softkeys import (
     build_get_default_wheel_mode,
+    build_get_edit_keymap_name,
     build_get_flip_status,
     build_set_cc_names_list,
     build_set_default_wheel_mode,
     build_set_edit_keymap_name,
     build_set_key_blank,
+    build_set_keycap_name,
+    build_set_midi_cmd,
+    build_set_usb_cmd,
     handle_auto_mode_on_scribs_reply,
     handle_cc_names_list_reply,
     handle_default_wheel_mode_reply,
@@ -293,3 +297,55 @@ class TestSoftkeyBuilders:
         names = [f"CC{i}" for i in range(256)]
         with pytest.raises(ValueError, match="too long"):
             build_set_cc_names_list(1000, 99, 1, 0, names)
+
+
+class TestGetKeymapNameBuilder:
+    def test_cmd_code(self):
+        data = build_get_edit_keymap_name(1000, 99, 2)
+        cmd = struct.unpack_from(">i", data, 0)[0]
+        assert cmd == MessageCode.SEND_GET_EDIT_KEYMAP_NAME
+
+    def test_daw_layer_in_payload(self):
+        data = build_get_edit_keymap_name(1000, 99, 3)
+        assert data[16] == 3  # daw_layer byte at payload offset 0
+
+
+class TestUsbCmdBuilder:
+    def test_cmd_code(self):
+        data = build_set_usb_cmd(1000, 99, 1, 2, 0, "ctrl+z")
+        cmd = struct.unpack_from(">i", data, 0)[0]
+        assert cmd == MessageCode.SEND_SET_USB_CMD
+
+    def test_payload_bytes_and_string(self):
+        data = build_set_usb_cmd(1000, 99, 2, 5, 1, "shift+f1")
+        assert data[16] == 2  # daw_layer
+        assert data[17] == 5  # key_index
+        assert data[18] == 1  # is_top_row
+        assert b"shift+f1\x00" in data[19:]
+
+
+class TestMidiCmdBuilder:
+    def test_cmd_code(self):
+        data = build_set_midi_cmd(1000, 99, 1, 0, 3, 7)
+        cmd = struct.unpack_from(">i", data, 0)[0]
+        assert cmd == MessageCode.SEND_SET_MIDI_CMD
+
+    def test_payload_bytes(self):
+        data = build_set_midi_cmd(1000, 99, 2, 1, 4, 10)
+        assert data[16] == 2  # daw_layer
+        assert data[17] == 1  # is_top_row
+        assert data[18] == 4  # key_index
+        assert data[19] == 10  # func_index
+
+
+class TestKeycapNameBuilder:
+    def test_cmd_code(self):
+        data = build_set_keycap_name(1000, 99, 3, 0, "Play")
+        cmd = struct.unpack_from(">i", data, 0)[0]
+        assert cmd == MessageCode.SEND_SET_KEYCAP_NAME
+
+    def test_payload_bytes_and_name(self):
+        data = build_set_keycap_name(1000, 99, 5, 1, "Stop")
+        assert data[16] == 5  # key_index
+        assert data[17] == 1  # is_top_row
+        assert b"Stop\x00" in data[18:]
