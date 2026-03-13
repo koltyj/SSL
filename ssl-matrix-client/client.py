@@ -1,20 +1,32 @@
 """Core SSL Matrix client: single socket on port 50081, threaded recv loop, dispatch table."""
 
+import logging
+import random
 import socket
-import struct
 import threading
 import time
-import random
-import logging
 
-from .protocol import (
-    MessageCode, TxMessage, RxMessage,
-    TO_REMOTE, PORT, BUFFER_SIZE, PROTOCOL_NAMES,
+from .handlers import (
+    chan_presets,
+    channels,
+    connection,
+    delta,
+    profiles,
+    projects,
+    routing,
+    softkeys,
+    total_recall,
+    xpatch,
 )
 from .models import ConsoleState
-from .handlers import (
-    connection, channels, profiles, delta, routing, projects,
-    total_recall, chan_presets, xpatch, softkeys,
+from .protocol import (
+    BUFFER_SIZE,
+    PORT,
+    PROTOCOL_NAMES,
+    TO_REMOTE,
+    MessageCode,
+    RxMessage,
+    TxMessage,
 )
 
 log = logging.getLogger(__name__)
@@ -31,7 +43,7 @@ class SSLMatrixClient:
     def __init__(self, console_ip="192.168.1.2", port=PORT):
         self.console_ip = console_ip
         self.port = port
-        self.my_serial = random.randint(-2**31, 2**31 - 1)
+        self.my_serial = random.randint(-(2**31), 2**31 - 1)
         self.state = ConsoleState()
         self._sock = None
         self._recv_thread = None
@@ -44,8 +56,7 @@ class SSLMatrixClient:
         return {
             MessageCode.GET_DESK_REPLY: connection.handle_get_desk_reply,
             MessageCode.SEND_HEARTBEAT: connection.handle_heartbeat,
-            MessageCode.GET_PROJECT_NAME_AND_TITLE_REPLY:
-                connection.handle_project_name_and_title_reply,
+            MessageCode.GET_PROJECT_NAME_AND_TITLE_REPLY: connection.handle_project_name_and_title_reply,
             # Channel names
             MessageCode.GET_CHAN_NAMES_AND_IMAGES_REPLY: channels.handle_chan_names_reply,
             MessageCode.SET_CHAN_NAMES_REPLY: channels.handle_set_chan_names_reply,
@@ -170,7 +181,8 @@ class SSLMatrixClient:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         sock.bind(("0.0.0.0", self.port))
         sock.settimeout(10.0)
         return sock
@@ -220,6 +232,7 @@ class SSLMatrixClient:
             except OSError:
                 if self._running:
                     log.warning("Socket error in recv loop")
+                self._running = False
                 break
 
     def _send_get_desk(self):
@@ -229,9 +242,10 @@ class SSLMatrixClient:
 
     def send_raw(self, data):
         """Send raw bytes through the shared socket."""
-        if self._sock:
+        sock = self._sock
+        if sock:
             try:
-                self._sock.sendto(data, (self.console_ip, self.port))
+                sock.sendto(data, (self.console_ip, self.port))
             except OSError as e:
                 log.error("Send error: %s", e)
 
@@ -243,11 +257,21 @@ class SSLMatrixClient:
         """Create socket, start recv thread, send GET_DESK."""
         if self._running:
             return
-        self._sock = self._create_socket()
-        self._running = True
-        self._recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
-        self._recv_thread.start()
-        self._send_get_desk()
+        try:
+            self._sock = self._create_socket()
+            self._running = True
+            self._recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
+            self._recv_thread.start()
+            self._send_get_desk()
+        except Exception:
+            self._running = False
+            if self._sock:
+                try:
+                    self._sock.close()
+                except OSError:
+                    pass
+                self._sock = None
+            raise
 
     def discover(self):
         """Send GET_DESK and return True if console responds."""
@@ -269,7 +293,11 @@ class SSLMatrixClient:
 
         15 messages to fetch all console state.
         """
-        ds = self.state.desk.serial
+        with self._lock:
+            if not self.state.desk.online:
+                log.warning("request_sync called before desk is online")
+                return
+            ds = self.state.desk.serial
         ms = self.my_serial
 
         # Channel names
@@ -351,16 +379,17 @@ class SSLMatrixClient:
     def disconnect(self):
         """Stop recv thread and close socket."""
         self._running = False
-        if self._recv_thread:
-            self._recv_thread.join(timeout=2)
-            self._recv_thread = None
         if self._sock:
             try:
                 self._sock.close()
             except OSError:
                 pass
             self._sock = None
-        self.state.desk.online = False
+        if self._recv_thread:
+            self._recv_thread.join(timeout=2)
+            self._recv_thread = None
+        with self._lock:
+            self.state.desk.online = False
 
     # --- Convenience methods ---
 
@@ -385,14 +414,12 @@ class SSLMatrixClient:
     def set_protocol_for_layer(self, layer, profile_name):
         """Set profile for a DAW layer."""
         ds = self.state.desk.serial
-        self.send(profiles.build_set_profile_for_daw_layer(
-            ds, self.my_serial, layer, profile_name))
+        self.send(profiles.build_set_profile_for_daw_layer(ds, self.my_serial, layer, profile_name))
 
     def clear_layer(self, layer):
         """Clear profile from a DAW layer."""
         ds = self.state.desk.serial
-        self.send(profiles.build_clear_profile_for_daw_layer(
-            ds, self.my_serial, layer))
+        self.send(profiles.build_clear_profile_for_daw_layer(ds, self.my_serial, layer))
 
     def get_profiles(self):
         """Return list of ProfileItem."""
@@ -415,9 +442,32 @@ class SSLMatrixClient:
         self.send(delta.build_set_mdac_meters(ds, self.my_serial, enable))
 
     def restart_console(self):
-        """Send restart command to console."""
+        """Send restart command to console via ephemeral socket.
+
+        The Java MatrixRemote app creates a new socket (ephemeral source port)
+        for every outgoing packet.  Most commands work fine from our shared
+        port-50081 socket, but the board firmware's restart handler appears to
+        behave differently when the packet arrives from source port 50081 vs an
+        ephemeral port — the board freezes instead of rebooting.
+
+        Mirroring Java's TxMessage.tx(): open a fresh socket with port=0,
+        send the single restart packet, then close it immediately.
+        """
         ds = self.state.desk.serial
-        self.send(delta.build_restart_console(ds, self.my_serial))
+        packet = delta.build_restart_console(ds, self.my_serial)
+        ephemeral = None
+        try:
+            ephemeral = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ephemeral.bind(("0.0.0.0", 0))  # OS assigns ephemeral source port
+            ephemeral.sendto(packet, (self.console_ip, self.port))
+        except OSError as e:
+            log.error("Restart send error: %s", e)
+        finally:
+            if ephemeral:
+                try:
+                    ephemeral.close()
+                except OSError:
+                    pass
 
     # --- Routing convenience methods ---
 
@@ -491,8 +541,7 @@ class SSLMatrixClient:
     def new_title(self, project, title):
         """Create a new title in a project."""
         ds = self.state.desk.serial
-        self.send(projects.build_make_new_title_with_name(
-            ds, self.my_serial, project, title))
+        self.send(projects.build_make_new_title_with_name(ds, self.my_serial, project, title))
 
     def delete_project(self, name):
         """Delete a project."""
