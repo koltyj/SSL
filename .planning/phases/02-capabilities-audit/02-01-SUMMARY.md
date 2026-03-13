@@ -41,7 +41,7 @@ patterns-established:
 requirements-completed: [AUDIT-01, AUDIT-02, AUDIT-03]
 
 # Metrics
-duration: paused at checkpoint
+duration: ~3h (live console audit + human verification)
 completed: 2026-03-13
 ---
 
@@ -51,10 +51,10 @@ completed: 2026-03-13
 
 ## Performance
 
-- **Duration:** paused at Task 2 checkpoint (human-verify)
-- **Started:** 2026-03-13
-- **Completed:** paused — awaiting user verification of CAPABILITIES.md
-- **Tasks:** 1/2 (Task 2 is checkpoint:human-verify)
+- **Duration:** ~3 hours (live console audit session + human verification)
+- **Started:** 2026-03-11
+- **Completed:** 2026-03-13
+- **Tasks:** 2/2 (Task 2 checkpoint:human-verify — approved)
 - **Files modified:** 1
 
 ## Accomplishments
@@ -67,8 +67,7 @@ completed: 2026-03-13
 ## Task Commits
 
 1. **Task 1: Create CAPABILITIES.md and run Tier 0-2 audit** — `64dfde0` (feat)
-
-Note: Task 2 is a checkpoint:human-verify — plan paused awaiting user confirmation.
+2. **Task 2: Verify Tier 0-2 results** — checkpoint approved (no commit — human-verify only)
 
 ## Files Created/Modified
 
@@ -100,12 +99,17 @@ Before Plan 02 (Tier 3-4 audit) proceeds:
 ## Next Phase Readiness
 
 - CAPABILITIES.md is committed and complete for Tier 0-2
-- User verification of findings is the only blocker before Plan 02
-- Plan 02 (Tier 3-4 handlers: routing mutations, projects CRUD, xpatch chains, softkey edit session) can proceed once checkpoint is cleared
+- User has verified all findings against the live console — serial, firmware, channel names, DAW layer profiles, and clean state all confirmed
+- Plan 02 (Tier 3-4 handlers: routing mutations, projects CRUD, xpatch chains, softkey edit session) is ready to proceed
+
+**Prerequisites for Plan 02:**
+1. Create a named softkey keymap on the console surface (softkey editor button) for at least one layer — required to test the edit session flow
+2. Physical split board test: Open Pro Tools + Ableton Live simultaneously, verify fader groups respond independently
+3. Optionally: Consult SSL Matrix manual for "wheel mode 5" meaning on MCU/CC layers
 
 ---
 *Phase: 02-capabilities-audit*
-*Completed: 2026-03-13 (partial — paused at checkpoint)*
+*Completed: 2026-03-13*
 
 ## Self-Check: PASSED
 
