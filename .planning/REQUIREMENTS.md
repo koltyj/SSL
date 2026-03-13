@@ -46,9 +46,9 @@ Note: DAW switching between Pro Tools and Ableton is handled by hardware buttons
 
 ### Console Surface Features
 
-- [ ] **ADV-01**: Soft key macros programmed for session workflow (Pro Tools and Ableton commands)
-- [ ] **ADV-02**: V-pot rotary encoders controlling pan, sends, and plugin parameters
-- [ ] **ADV-03**: SuperCue/Auto-Mon integration with DAW punch recording workflow
+- [x] **ADV-01**: Soft key macros programmed for session workflow (Pro Tools and Ableton commands)
+- [x] **ADV-02**: V-pot rotary encoders controlling pan, sends, and plugin parameters
+- [x] **ADV-03**: SuperCue/Auto-Mon integration with DAW punch recording workflow
 
 ### Session & Workflow
 
@@ -106,9 +106,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | AUDIT-02 | Phase 2 | Complete |
 | AUDIT-03 | Phase 2 | Complete |
 | AUDIT-04 | Phase 2 | Complete |
-| ADV-01 | Phase 3 | Pending |
-| ADV-02 | Phase 3 | Pending |
-| ADV-03 | Phase 3 | Pending |
+| ADV-01 | Phase 3 | Complete |
+| ADV-02 | Phase 3 | Complete |
+| ADV-03 | Phase 3 | Complete |
 | SESS-01 | Phase 4 | Pending |
 | SESS-02 | Phase 4 | Pending |
 | SPLIT-01 | Phase 4 | Pending |

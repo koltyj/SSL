@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 03-01-PLAN.md — cc_names bug fixed, wheel_mode and cc_names CLI commands added
-last_updated: "2026-03-13T21:04:23.252Z"
+stopped_at: "Completed 03-02 Task 1 — softkey CLI commands + builder implemented. At checkpoint: awaiting live console verification (Task 2)."
+last_updated: "2026-03-13T21:09:45.208Z"
 last_activity: "2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off."
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 50
 ---
 
@@ -53,6 +53,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 02-capabilities-audit P01 | 3h | 2 tasks | 1 files |
 | Phase 02-capabilities-audit P02 | 26min | 1 task | 1 files |
 | Phase 03-console-surface-features P01 | 2min | 2 tasks | 4 files |
+| Phase 03-console-surface-features P02 | 5min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 02-capabilities-audit]: Test project artifact (directory '2'/title '1') remains on console — cannot delete active project via protocol alone
 - [Phase 03-console-surface-features]: cc_names stored as flat list replaced wholesale on each reply (not keyed by layer/type)
 - [Phase 03-console-surface-features]: Wheel mode label mapping 0-3 only (Pan/Linear/Boost-Cut/Off); values 4-5 accepted by set but shown as Unknown on read
+- [Phase 03-console-surface-features]: SuperCue/Auto-Mon hardware-only on V3.0/5 — documented via do_supercue, no UDP path needed
+- [Phase 03-console-surface-features]: Keymap name whitelist (keymap1-4) enforced in do_softkey_edit; NONE cannot open edit session
 
 ### Pending Todos
 
@@ -102,6 +105,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:04:23.249Z
-Stopped at: Completed 03-01-PLAN.md — cc_names bug fixed, wheel_mode and cc_names CLI commands added
+Last session: 2026-03-13T21:09:45.205Z
+Stopped at: Completed 03-02 Task 1 — softkey CLI commands + builder implemented. At checkpoint: awaiting live console verification (Task 2).
 Resume file: None
