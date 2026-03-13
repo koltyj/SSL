@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
+stopped_at: "02-01-PLAN.md Task 2 checkpoint:human-verify — awaiting user verification of CAPABILITIES.md"
+last_updated: "2026-03-13T19:29:18.978Z"
+last_activity: 2026-03-11 — Recalibrated roadmap (5 phases), updated requirements, repo pushed to GitHub
+progress:
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 1
+  percent: 20
+---
+
 # Project State
 
 ## Project Reference
@@ -5,32 +21,32 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Flying faders that respond to DAW automation playback and capture fader moves back into the DAW
-**Current focus:** Phase 1 — Compatibility Verification
+**Current focus:** Phase 2 — Capabilities Audit
 
 ## Current Position
 
-Phase: 1 of 4 (Compatibility Verification)
-Plan: 01-02 in progress (DAW behavior verification)
-Status: Ableton MCU VERIFIED (16 faders), Pro Tools HUI CONFIGURED (pending 4-behavior verification), delta-ctrl INVESTIGATING
-Last activity: 2026-02-25 — Ableton MCU 16-fader fix, Pro Tools HUI configured, delta-ctrl debugging
+Phase: 2 of 5 (Capabilities Audit)
+Plan: Not yet planned
+Status: Roadmap recalibrated, CONTEXT.md written, ready for planning
+Last activity: 2026-03-11 — Recalibrated roadmap (5 phases), updated requirements, repo pushed to GitHub
 
-Progress: [██████░░░░] 60%
+Progress: [██░░░░░░░░] 20% (Phase 1 complete, 4 phases remaining)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1 (01-01)
-- Average duration: ~2 hours (hands-on, includes network troubleshooting)
-- Total execution time: ~2 hours
+- Total plans completed: 2 (01-01, 01-02)
+- Average duration: ~2 hours
+- Total execution time: ~4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 1/2 | ~2h | ~2h |
+| 1 | 2/2 | ~4h | ~2h |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 ✓
+- Last 5 plans: 01-01 ✓, 01-02 ✓
 - Trend: —
 
 *Updated after each plan completion*
@@ -42,41 +58,40 @@ Progress: [██████░░░░] 60%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Research]: ipMIDI over Ethernet is the only transport — USB is firmware-only, NOT for DAW control
-- [Research]: Pro Tools requires HUI protocol; Ableton requires MCU — they cannot share a port or protocol
-- [Research]: Phase 1 is a hard gate — no code until Tahoe 26.2 compatibility confirmed empirically
-- [Research]: delta-ctrl plugin ($50, SSL) is required for true MDAC-driven automation; verify Tahoe compat before purchasing
-- [Research]: Disable EUCON in Pro Tools before any HUI testing to avoid metering bug
-- [VERIFIED]: ipMIDI 2.0 works on macOS Tahoe 26.2 — P0 blocker resolved
-- [VERIFIED]: MatrixRemote connects to SSL Matrix on Tahoe 26.2 over Ethernet
-- [VERIFIED]: Ableton Live MCU control surface works via ipMIDI Port 3 (MackieControl) + Port 4 (MackieControlXT) — all 16 faders, transport, scribble strips confirmed
-- [VERIFIED]: Pro Tools HUI configured on ipMIDI Ports 1+2 — EUCON disabled, HUI controllers added (pending 4-behavior formal verification)
-- [Discovery]: MCU protocol hard limit is 8 faders per device — MackieControlXT on Port 4 required for faders 9-16
-- [Discovery]: delta-ctrl plugin purchased, installed, loads in both DAWs but has no effect — multicast route 225.0.0.38 already correct, investigating plugin config / MatrixRemote delta mode
-- [Discovery]: CalDigit TS4 2.5GbE Ethernet does NOT get link with Matrix 100Mbps port — Anker USB Ethernet adapter works
-- [Discovery]: Matrix static IP is 192.168.1.2; Mac Ethernet set to 192.168.1.50/24 on en11
-- [Discovery]: ipMIDI multicast appears to work over en0 (Wi-Fi) even with Ethernet disconnected — network topology needs clarification
-- [Config]: Persistent multicast routes set: 225.0.0.37 + 225.0.0.38 → "USB 10/100/1G/2.5G LAN" service
-- [Config]: Matrix firmware is V3.0/5
-- [Config]: JDK 21.0.10 (Temurin) installed at ~/Library/Java/JavaVirtualMachines/, JAVA_HOME in .zshrc
+- [VERIFIED]: All DAW control (HUI for PT, MCU for Ableton) works natively via ipMIDI — no custom bridge needed
+- [VERIFIED]: delta-ctrl works in both Pro Tools and Ableton Live
+- [VERIFIED]: DAW switching is hardware buttons on the Matrix — no software switching needed
+- [DECIDED]: MatrixRemote is completely broken on Tahoe — ssl-matrix-client is the sole replacement
+- [DECIDED]: Roadmap recalibrated to 5 phases: Audit → Surface Features → Workflow → Dock App
+- [DECIDED]: Native macOS dock app (not menu bar widget) for GUI
+- [DECIDED]: Session templates manually linked to project files, not auto-detected
+- [DECIDED]: Capabilities audit is a standalone phase — verify before building
+- [DECIDED]: Soft keys / V-pots / SuperCue come before split board and session templates
+- [Config]: Console IP 192.168.1.2, Mac 192.168.1.50/24 on en11
+- [Config]: Matrix firmware V3.0/5
+- [Config]: Repo: github.com/koltyj/SSL
+- [Phase 02-capabilities-audit]: SuperCue/Auto-Mon is NOT in UDP protocol on V3.0/5 — hardware-only, no UDP path
+- [Phase 02-capabilities-audit]: Split board: all 4 DAW layers simultaneously active at protocol level; fader group assignment is console-surface config, not UDP
+- [Phase 02-capabilities-audit]: Softkey edit session requires named keymap (not NONE); user must create via console UI before Plan 02
 
 ### Pending Todos
 
-- Run Pro Tools 4-behavior verification (automation playback, transport, fader touch write, scribble strips)
-- Debug delta-ctrl no-effect issue: check plugin channel config, MatrixRemote delta mode, Tahoe compat
-- Clarify network topology — how is Matrix reachable via Wi-Fi/en0?
-- Test Local Network permission persistence after reboot (Tahoe bug)
+- Plan Phase 2 (Capabilities Audit)
+- Wire-test all 105 dispatch handlers against live console
+- Determine split board feasibility (dual DAW layers on separate fader groups)
+- Map soft key, V-pot, SuperCue protocol capabilities
 
 ### Blockers/Concerns
 
-- ~~**P0:** ipMIDI Tahoe 26.2 compatibility is unverified~~ **RESOLVED — works**
-- **P1:** delta-ctrl purchased and installed — loads but no effect. Route is correct (225.0.0.38 → en11). Suspected: plugin channel config not set, or MatrixRemote delta mode not enabled, or Tahoe compat issue.
-- **P1:** MIDIKit HUI completeness at v0.11.0 needs hands-on validation against a live Pro Tools session before Phase 2 planning is complete.
-- ~~**P1:** SSL Matrix firmware version unknown~~ **RESOLVED — V3.0/5**
-- **P1:** Network path unclear — Anker adapter (en11) dropped but ipMIDI still works on en0. Need to understand topology for reliability.
+- ~~**P0:** ipMIDI Tahoe 26.2 compatibility~~ **RESOLVED**
+- ~~**P1:** Pro Tools HUI communication error~~ **RESOLVED**
+- ~~**P1:** delta-ctrl no effect~~ **RESOLVED — works in both DAWs**
+- **P1:** Network topology unclear — ipMIDI works over Wi-Fi (en0) unexpectedly. Functional but not understood.
+- **P1:** XPatch chains parse assumes 8 link elements — may be wrong for some console configs
+- **P2:** ssl-matrix-client handlers are code-verified but not wire-tested against live console
 
 ## Session Continuity
 
-Last session: 2026-02-25
-Stopped at: Pro Tools HUI configured (needs 4-behavior test), delta-ctrl debugging in progress
-Resume file: .planning/phases/01-compatibility-verification/.continue-here.md
+Last session: 2026-03-13T19:29:14.486Z
+Stopped at: 02-01-PLAN.md Task 2 checkpoint:human-verify — awaiting user verification of CAPABILITIES.md
+Resume file: None
