@@ -57,7 +57,10 @@ Plans:
   2. V-pot rotary encoders control pan, sends, or plugin parameters in the active DAW
   3. SuperCue/Auto-Mon integration works with DAW punch recording workflow
   4. All surface features are configurable through the CLI
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — Fix cc_names storage bug, add V-pot wheel mode and CC names CLI commands (ADV-02)
+- [ ] 03-02-PLAN.md — Soft key programming CLI commands + SuperCue documentation (ADV-01, ADV-03)
 
 ### Phase 4: Advanced Workflow Features
 **Goal**: The ssl-matrix-client is a complete MatrixRemote replacement with session-aware workflow features — split board for dual-DAW, session templates linked to project files, routing recall, and connection monitoring with auto-reconnect
@@ -90,6 +93,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Compatibility Verification | 2/2 | Complete | 2026-03-11 |
 | 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
-| 3. Console Surface Features | 0/TBD | Not started | - |
+| 3. Console Surface Features | 0/2 | Not started | - |
 | 4. Advanced Workflow Features | 0/TBD | Not started | - |
 | 5. Native macOS Dock App | 0/TBD | Not started | - |
