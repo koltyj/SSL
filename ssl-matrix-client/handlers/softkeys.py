@@ -16,6 +16,13 @@ log = logging.getLogger(__name__)
 # =============================================================================
 
 
+def build_get_edit_keymap_name(desk_serial, my_serial, daw_layer):
+    """Build SEND_GET_EDIT_KEYMAP_NAME (cmd=600). Payload: byte dawLayer."""
+    msg = TxMessage(MessageCode.SEND_GET_EDIT_KEYMAP_NAME, desk_serial, my_serial)
+    msg.write_byte(daw_layer)
+    return msg.to_bytes()
+
+
 def build_set_edit_keymap_name(desk_serial, my_serial, daw_layer, keymap_name):
     """Build SEND_SET_EDIT_KEYMAP_NAME (cmd=610). Payload: byte dawLayer, string name."""
     msg = TxMessage(MessageCode.SEND_SET_EDIT_KEYMAP_NAME, desk_serial, my_serial)

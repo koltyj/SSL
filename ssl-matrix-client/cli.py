@@ -789,6 +789,262 @@ class SSLMatrixCLI(cmd.Cmd):
         )
         print(f"CC names set for layer {layer} type {cc_type}: {names}")
 
+    # --- Soft Keys ---
+
+    def do_softkey_keymap(self, arg):
+        """Show current keymap name for a layer. Usage: softkey_keymap <layer>"""
+        if not self._require_connected():
+            return
+        try:
+            layer = int(arg.strip())
+        except ValueError:
+            print("Usage: softkey_keymap <layer_1-4>")
+            return
+        if not 1 <= layer <= 4:
+            print("Layer must be 1-4.")
+            return
+        from .handlers.softkeys import build_get_edit_keymap_name
+
+        self.client.send(
+            build_get_edit_keymap_name(self.client.state.desk.serial, self.client.my_serial, layer)
+        )
+        time.sleep(0.3)
+        with self.client._lock:
+            name = self.client.state.softkeys.keymap_name
+        if name == "NONE" or not name:
+            print(f"Layer {layer}: NONE (no keymap configured)")
+        else:
+            print(f"Layer {layer}: {name}")
+
+    def do_softkey_edit(self, arg):
+        """Open a keymap edit session. Usage: softkey_edit <layer> <name>"""
+        if not self._require_connected():
+            return
+        parts = arg.split(None, 1)
+        if len(parts) < 2:
+            print("Usage: softkey_edit <layer_1-4> <name>")
+            print("Valid names: keymap1, keymap2, keymap3, keymap4")
+            return
+        try:
+            layer = int(parts[0])
+        except ValueError:
+            print("Layer must be 1-4.")
+            return
+        if not 1 <= layer <= 4:
+            print("Layer must be 1-4.")
+            return
+        name = parts[1].strip()
+        if name not in ("keymap1", "keymap2", "keymap3", "keymap4"):
+            print("Name must be one of: keymap1, keymap2, keymap3, keymap4")
+            return
+        from .handlers.softkeys import (
+            build_get_edit_keymap_data,
+            build_get_edit_keymap_size,
+            build_set_edit_keymap_name,
+        )
+
+        self.client.send(
+            build_set_edit_keymap_name(
+                self.client.state.desk.serial, self.client.my_serial, layer, name
+            )
+        )
+        time.sleep(0.5)
+        self.client.send(
+            build_get_edit_keymap_size(self.client.state.desk.serial, self.client.my_serial)
+        )
+        time.sleep(0.3)
+        self.client.send(
+            build_get_edit_keymap_data(
+                self.client.state.desk.serial, self.client.my_serial, 1, 1, 0
+            )
+        )
+        time.sleep(0.5)
+        with self.client._lock:
+            keys = list(self.client.state.softkeys.keys)
+            in_edit = self.client.state.softkeys.in_edit
+        if not in_edit:
+            print(f"Edit session for '{name}' opened (no keys loaded yet).")
+            return
+        type_names = {0: "blank", 1: "midi", 2: "usb", 3: "menu"}
+        print(f"{'Idx':>4s} {'Row':>3s} {'Type':6s} {'Keycap':12s} {'Data'}")
+        print("-" * 60)
+        for k in keys:
+            t = type_names.get(k.key_type, str(k.key_type))
+            print(f"{k.index:4d} {k.is_top_row:3d} {t:6s} {k.keycap_name:12s} {k.data}")
+
+    def do_softkey_list(self, arg):
+        """Show all key assignments from current edit session."""
+        if not self._require_connected():
+            return
+        with self.client._lock:
+            in_edit = self.client.state.softkeys.in_edit
+            keys = list(self.client.state.softkeys.keys)
+        if not in_edit:
+            print("No edit session open. Use 'softkey_edit' first.")
+            return
+        type_names = {0: "blank", 1: "midi", 2: "usb", 3: "menu"}
+        print(f"{'Idx':>4s} {'Row':>3s} {'Type':6s} {'Keycap':12s} {'Data'}")
+        print("-" * 60)
+        for k in keys:
+            t = type_names.get(k.key_type, str(k.key_type))
+            print(f"{k.index:4d} {k.is_top_row:3d} {t:6s} {k.keycap_name:12s} {k.data}")
+
+    def do_softkey_usb(self, arg):
+        """Assign USB command to a key. Usage: softkey_usb <layer> <key> <row> <cmd>"""
+        if not self._require_connected():
+            return
+        parts = arg.split(None, 3)
+        if len(parts) < 4:
+            print("Usage: softkey_usb <layer_1-4> <key> <row_0-1> <cmd>")
+            return
+        try:
+            layer = int(parts[0])
+            key = int(parts[1])
+            row = int(parts[2])
+        except ValueError:
+            print("layer, key, and row must be numbers.")
+            return
+        if not 1 <= layer <= 4:
+            print("Layer must be 1-4.")
+            return
+        usb_cmd = parts[3]
+        from .handlers.softkeys import build_set_usb_cmd
+
+        self.client.send(
+            build_set_usb_cmd(
+                self.client.state.desk.serial, self.client.my_serial, layer, key, row, usb_cmd
+            )
+        )
+        print(f"Key {key} row {row} layer {layer} -> USB '{usb_cmd}'")
+
+    def do_softkey_midi(self, arg):
+        """Assign MIDI function to a key. Usage: softkey_midi <layer> <key> <row> <func_index>"""
+        if not self._require_connected():
+            return
+        parts = arg.split()
+        if len(parts) < 4:
+            print("Usage: softkey_midi <layer_1-4> <key> <row_0-1> <func_index>")
+            return
+        try:
+            layer = int(parts[0])
+            key = int(parts[1])
+            row = int(parts[2])
+            func_index = int(parts[3])
+        except ValueError:
+            print("All arguments must be numbers.")
+            return
+        if not 1 <= layer <= 4:
+            print("Layer must be 1-4.")
+            return
+        from .handlers.softkeys import build_set_midi_cmd
+
+        self.client.send(
+            build_set_midi_cmd(
+                self.client.state.desk.serial,
+                self.client.my_serial,
+                layer,
+                row,
+                key,
+                func_index,
+            )
+        )
+        print(f"Key {key} row {row} layer {layer} -> MIDI func {func_index}")
+        print("Use 'softkey_midi_funcs' to see available functions.")
+
+    def do_softkey_name(self, arg):
+        """Set keycap label. Usage: softkey_name <key> <row> <name>"""
+        if not self._require_connected():
+            return
+        parts = arg.split(None, 2)
+        if len(parts) < 3:
+            print("Usage: softkey_name <key> <row_0-1> <name>")
+            return
+        try:
+            key = int(parts[0])
+            row = int(parts[1])
+        except ValueError:
+            print("key and row must be numbers.")
+            return
+        name = parts[2]
+        from .handlers.softkeys import build_set_keycap_name
+
+        self.client.send(
+            build_set_keycap_name(
+                self.client.state.desk.serial, self.client.my_serial, key, row, name
+            )
+        )
+        print(f"Key {key} row {row} keycap -> '{name}'")
+
+    def do_softkey_blank(self, arg):
+        """Clear a key assignment. Usage: softkey_blank <key> <row>"""
+        if not self._require_connected():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: softkey_blank <key> <row_0-1>")
+            return
+        try:
+            key = int(parts[0])
+            row = int(parts[1])
+        except ValueError:
+            print("key and row must be numbers.")
+            return
+        from .handlers.softkeys import build_set_key_blank
+
+        self.client.send(
+            build_set_key_blank(self.client.state.desk.serial, self.client.my_serial, key, row)
+        )
+        print(f"Key {key} row {row} cleared.")
+
+    def do_softkey_save(self, arg):
+        """Save and close the current keymap edit session."""
+        if not self._require_connected():
+            return
+        from .handlers.softkeys import build_save_edit_keymap
+
+        self.client.send(
+            build_save_edit_keymap(self.client.state.desk.serial, self.client.my_serial)
+        )
+        print("Keymap saved and edit session closed.")
+
+    def do_softkey_midi_funcs(self, arg):
+        """List MIDI functions available for a layer. Usage: softkey_midi_funcs <layer>"""
+        if not self._require_connected():
+            return
+        try:
+            layer = int(arg.strip())
+        except ValueError:
+            print("Usage: softkey_midi_funcs <layer_1-4>")
+            return
+        if not 1 <= layer <= 4:
+            print("Layer must be 1-4.")
+            return
+        from .handlers.softkeys import build_get_midi_function_list
+
+        self.client.send(
+            build_get_midi_function_list(
+                self.client.state.desk.serial, self.client.my_serial, layer
+            )
+        )
+        time.sleep(0.5)
+        with self.client._lock:
+            funcs = list(self.client.state.softkeys.midi_functions)
+        if not funcs:
+            print("No MIDI functions received.")
+            return
+        print(f"{'Index':>6s} {'Function':32s} {'Keycap'}")
+        print("-" * 60)
+        for idx, user_name, keycap_name in funcs:
+            print(f"{idx:6d} {user_name:32s} {keycap_name}")
+
+    def do_supercue(self, arg):
+        """SuperCue/Auto-Mon status. Note: Not available via UDP protocol on firmware V3.0/5."""
+        print(
+            "SuperCue/Auto-Mon is a hardware-only feature on this console firmware (V3.0/5).\n"
+            "It is NOT accessible via the UDP protocol.\n"
+            "Use the console surface buttons directly for SuperCue/Auto-Mon control."
+        )
+
     # --- Debug ---
 
     def do_raw(self, arg):
