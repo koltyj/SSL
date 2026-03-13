@@ -621,6 +621,11 @@ class SSLMatrixClient:
         with self._lock:
             return list(self.state.softkeys.keys)
 
+    def set_stereo_insert(self, first, second, stereo=True):
+        """Link or unlink two insert channels as a stereo pair."""
+        ds = self.state.desk.serial
+        self.send(routing.build_set_chan_stereo_insert(ds, self.my_serial, first, second, stereo))
+
     def send_custom(self, cmd_code, payload_hex=""):
         """Send a raw message with arbitrary cmd code and hex payload."""
         msg = TxMessage(cmd_code, self.state.desk.serial, self.my_serial)

@@ -59,7 +59,7 @@ completed: "2026-03-13"
 - **Duration:** 5 min
 - **Started:** 2026-03-13T21:04:00Z
 - **Completed:** 2026-03-13T21:09:00Z
-- **Tasks:** 1 of 2 (Task 2 is checkpoint:human-verify, awaiting live console verification)
+- **Tasks:** 2 of 2
 - **Files modified:** 3
 
 ## Accomplishments
@@ -74,7 +74,7 @@ completed: "2026-03-13"
 1. **Task 1 RED: Failing builder tests** - `89994f5` (test)
 2. **Task 1 GREEN: build_get_edit_keymap_name + all softkey CLI commands** - `c69fe7b` (feat)
 
-_Note: Task 2 (human-verify) is a checkpoint — awaiting live console verification._
+3. **Task 2: Live console verification** — APPROVED (all commands verified working on Matrix V3.0/5)
 
 ## Files Created/Modified
 
@@ -100,7 +100,7 @@ None — plan executed exactly as written. The implementation was already partia
 
 - All 9 softkey programming CLI commands are implemented and lint-clean
 - 187 tests pass (35 in test_handler_softkeys.py)
-- Task 2 checkpoint awaiting: user must verify softkey commands on live console (connect, run softkey_keymap 1, softkey_midi_funcs 1, softkey_edit 1 keymap1, supercue)
+- Task 2 checkpoint VERIFIED: all commands tested on live console — keymap query, wheel mode read/set, 102 MIDI functions listed, edit session opened, SuperCue notice printed
 
 ## Self-Check: PASSED
 

@@ -380,6 +380,26 @@ class SSLMatrixCLI(cmd.Cmd):
         self.client.deassign_channel(chan)
         print(f"Channel {chan} deassigned.")
 
+    def do_stereo(self, arg):
+        """Link or unlink a stereo insert pair. Usage: stereo <chan1> <chan2> [off]"""
+        if not self._require_connected():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: stereo <chan1> <chan2>       (link)")
+            print("       stereo <chan1> <chan2> off   (unlink)")
+            return
+        try:
+            first = int(parts[0])
+            second = int(parts[1])
+        except ValueError:
+            print("Channel numbers must be integers.")
+            return
+        stereo = not (len(parts) >= 3 and parts[2].lower() == "off")
+        self.client.set_stereo_insert(first, second, stereo)
+        action = "Linked" if stereo else "Unlinked"
+        print(f"{action} stereo pair: channels {first} + {second}")
+
     def do_matrix_presets(self, arg):
         """List matrix routing presets."""
         if not self._require_connected():
