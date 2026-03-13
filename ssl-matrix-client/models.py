@@ -2,12 +2,12 @@
 
 import time
 from dataclasses import dataclass, field
-from typing import Optional, List, Tuple
 
 
 @dataclass
 class DeskInfo:
     """Console identity and status."""
+
     serial: int = 0
     address: str = ""
     product_name: str = ""
@@ -34,6 +34,7 @@ class DeskInfo:
 @dataclass
 class Channel:
     """A console channel with name."""
+
     number: int = 0
     name: str = ""
 
@@ -41,6 +42,7 @@ class Channel:
 @dataclass
 class ProfileItem:
     """A DAW controller profile stored on the console."""
+
     name: str = ""
     protocol: int = 0  # 0=none, 1=HUI, 2=MCU, 3=CC
     read_only: bool = False
@@ -50,6 +52,7 @@ class ProfileItem:
 @dataclass
 class DawLayer:
     """A DAW layer (1-4) with its protocol and profile."""
+
     number: int = 0
     protocol: int = 0  # 0=none, 1=HUI, 2=MCU, 3=CC
     profile_name: str = ""
@@ -58,15 +61,17 @@ class DawLayer:
 @dataclass
 class InsertDevice:
     """An insert device (1-16) in the matrix routing."""
+
     number: int = 0
     name: str = ""
     is_assigned: int = 0  # 0=free, 1=assigned
-    is_stereo: int = 0    # 0=mono, 1=stereo
+    is_stereo: int = 0  # 0=mono, 1=stereo
 
 
 @dataclass
 class Chain:
     """A chain of insert devices."""
+
     number: int = 0
     name: str = ""
     is_assigned: int = 0
@@ -76,6 +81,7 @@ class Chain:
 @dataclass
 class ChannelInserts:
     """Insert routing for a single channel."""
+
     channel: int = 0
     chain_name: str = ""
     inserts: list = field(default_factory=list)  # list of insert device numbers
@@ -85,12 +91,14 @@ class ChannelInserts:
 @dataclass
 class MatrixPreset:
     """A stored matrix routing preset."""
+
     name: str = ""
 
 
 @dataclass
 class FileEntry:
     """A file or directory entry from the console filesystem."""
+
     name: str = ""
     info: str = ""
     is_dir: bool = False
@@ -102,6 +110,7 @@ class FileEntry:
 @dataclass
 class DiskInfo:
     """Console disk usage information."""
+
     free_percent: int = 0
     archive_done: bool = False
 
@@ -109,6 +118,7 @@ class DiskInfo:
 @dataclass
 class TRSnapshot:
     """A Total Recall snapshot entry."""
+
     name: str = ""
     info: str = ""
     time_str: str = ""
@@ -120,12 +130,14 @@ class TRSnapshot:
 @dataclass
 class ChanNamesPreset:
     """A stored channel names preset."""
+
     name: str = ""
 
 
 @dataclass
 class XpatchChannel:
     """XPatch channel setup: device/dest names, levels, mode."""
+
     number: int = 0
     device_name: str = ""
     dest_name: str = ""
@@ -137,6 +149,7 @@ class XpatchChannel:
 @dataclass
 class XpatchPreset:
     """An XPatch routing preset."""
+
     index: int = 0
     used: bool = False
     name: str = ""
@@ -146,6 +159,7 @@ class XpatchPreset:
 @dataclass
 class XpatchChain:
     """An XPatch chain definition."""
+
     index: int = 0
     used: bool = False
     name: str = ""
@@ -155,6 +169,7 @@ class XpatchChain:
 @dataclass
 class XpatchRoute:
     """XPatch routing for a single destination."""
+
     dest: int = 0
     display_src: int = 0
     protect: bool = False
@@ -163,6 +178,7 @@ class XpatchRoute:
 @dataclass
 class XpatchState:
     """Full XPatch routing state."""
+
     channels: list = field(default_factory=lambda: [XpatchChannel(i) for i in range(1, 17)])
     presets: list = field(default_factory=list)
     chains: list = field(default_factory=list)
@@ -178,6 +194,7 @@ class XpatchState:
 @dataclass
 class KeyData:
     """A programmable key's current assignment."""
+
     index: int = 0
     is_top_row: int = 0
     key_type: int = 0  # 0=blank, 1=midi, 2=usb, 3=menu
@@ -188,6 +205,7 @@ class KeyData:
 @dataclass
 class SoftkeysState:
     """Softkeys/keymap editor state."""
+
     keymap_name: str = ""
     daw_layer: int = 0
     panel_type: int = 0  # 0=blank, 1=transport(15-key), 2=softkey(8-key)
@@ -200,11 +218,13 @@ class SoftkeysState:
     auto_mode_on_scribs: bool = False
     default_wheel_mode: int = 0
     fader_db_readout: int = 0
+    cc_names: list = field(default_factory=list)
 
 
 @dataclass
 class ConsoleState:
     """Full state of the connected console."""
+
     desk: DeskInfo = field(default_factory=DeskInfo)
     channels: list = field(default_factory=lambda: [Channel(i) for i in range(1, 33)])
     profiles: list = field(default_factory=list)

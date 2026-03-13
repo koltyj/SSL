@@ -5,8 +5,8 @@ All payload formats from decompiled SoftKeysHandler.java.
 
 import logging
 
-from ..protocol import MessageCode, TxMessage
 from ..models import KeyData
+from ..protocol import MessageCode, TxMessage
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 # =============================================================================
 # Keymap editing
 # =============================================================================
+
 
 def build_set_edit_keymap_name(desk_serial, my_serial, daw_layer, keymap_name):
     """Build SEND_SET_EDIT_KEYMAP_NAME (cmd=610). Payload: byte dawLayer, string name."""
@@ -68,6 +69,7 @@ def build_set_key_blank(desk_serial, my_serial, key_index, is_top_row):
 # USB/MIDI key commands
 # =============================================================================
 
+
 def build_set_usb_cmd(desk_serial, my_serial, daw_layer, key_index, is_top_row, usb_cmd):
     """Build SEND_SET_USB_CMD (cmd=650).
 
@@ -113,6 +115,7 @@ def build_set_new_menu_cmd(desk_serial, my_serial, daw_layer, key_index):
 # Menu sub-key commands
 # =============================================================================
 
+
 def build_set_menu_sub_keycap_name(desk_serial, my_serial, daw_layer, key_index, sub_index, name):
     """Build SEND_SET_MENU_SUB_KEYCAP_NAME (cmd=720)."""
     msg = TxMessage(MessageCode.SEND_SET_MENU_SUB_KEYCAP_NAME, desk_serial, my_serial)
@@ -123,7 +126,9 @@ def build_set_menu_sub_keycap_name(desk_serial, my_serial, daw_layer, key_index,
     return msg.to_bytes()
 
 
-def build_set_menu_sub_midi_cmd(desk_serial, my_serial, daw_layer, key_index, sub_index, func_index):
+def build_set_menu_sub_midi_cmd(
+    desk_serial, my_serial, daw_layer, key_index, sub_index, func_index
+):
     """Build SEND_SET_MENU_SUB_MIDI_CMD (cmd=730)."""
     msg = TxMessage(MessageCode.SEND_SET_MENU_SUB_MIDI_CMD, desk_serial, my_serial)
     msg.write_byte(daw_layer)
@@ -165,6 +170,7 @@ def build_follow_key_state(desk_serial, my_serial, daw_layer, key_index, is_top_
 # =============================================================================
 # Profile settings within softkeys context
 # =============================================================================
+
 
 def build_get_flip_status(desk_serial, my_serial, daw_layer):
     """Build SEND_GET_FLIP_STATUS (cmd=1000). Payload: byte dawLayer."""
@@ -276,6 +282,8 @@ def build_set_cc_names_list(desk_serial, my_serial, daw_layer, cc_type, names):
 
     Payload: byte dawLayer, byte type, byte numNames, then numNames x string name
     """
+    if len(names) > 255:
+        raise ValueError(f"CC names list too long: {len(names)} (max 255)")
     msg = TxMessage(MessageCode.SEND_SET_CC_NAMES_LIST, desk_serial, my_serial)
     msg.write_byte(daw_layer)
     msg.write_byte(cc_type)
@@ -288,6 +296,7 @@ def build_set_cc_names_list(desk_serial, my_serial, daw_layer, cc_type, names):
 # =============================================================================
 # Handlers (Console -> Remote)
 # =============================================================================
+
 
 def handle_edit_keymap_name_reply(rx, state):
     """Parse ACK_GET_EDIT_KEYMAP_NAME (cmd=601). Payload: string name, byte dawLayer."""
@@ -306,8 +315,9 @@ def handle_edit_keymap_data_reply(rx, state):
     in_edit = rx.get_unsigned_byte()
     sk.in_edit = in_edit != 0
     if not sk.in_edit:
+        sk.keys.clear()
         return
-    show_subs = rx.get_unsigned_byte()
+    rx.get_unsigned_byte()  # show_subs — consumed for cursor alignment
     sk.keys.clear()
     while rx.remaining > 0:
         key_index = rx.get_unsigned_byte()
@@ -318,8 +328,9 @@ def handle_edit_keymap_data_reply(rx, state):
         keycap_name = rx.get_string()
         data = ""
         if key_type == 0:  # blank
-            if show_subs == 0:
-                rx.get_string()  # skip
+            # Always consume the trailing string regardless of show_subs,
+            # to keep the parse cursor aligned for subsequent keys.
+            rx.get_string()  # skip
             data = ""
         elif key_type == 1:  # midi
             func_count = rx.get_unsigned_byte()
@@ -332,10 +343,15 @@ def handle_edit_keymap_data_reply(rx, state):
         elif key_type == 3:  # menu
             rx.get_string()  # skip
             data = "Menu"
-        sk.keys.append(KeyData(
-            index=key_index, is_top_row=is_top_row,
-            key_type=key_type, keycap_name=keycap_name, data=data,
-        ))
+        sk.keys.append(
+            KeyData(
+                index=key_index,
+                is_top_row=is_top_row,
+                key_type=key_type,
+                keycap_name=keycap_name,
+                data=data,
+            )
+        )
 
 
 def handle_edit_keymap_size_reply(rx, state):
@@ -368,6 +384,10 @@ def handle_midi_function_list_reply(rx, state):
     offset = rx.get_unsigned_byte()
     if offset == 0:
         sk.midi_functions.clear()
+    else:
+        # Trim any existing entries at or beyond this offset to prevent
+        # duplication on retransmits
+        sk.midi_functions = [entry for entry in sk.midi_functions if entry[0] < offset]
     for j in range(list_length):
         user_name = rx.get_string()
         keycap_name = rx.get_string()
@@ -424,11 +444,10 @@ def handle_cc_names_list_reply(rx, state):
     Payload: byte numNames, then numNames x string name
     """
     num = rx.get_unsigned_byte()
-    # Store on softkeys state — could be extended
     names = []
     for _ in range(num):
         names.append(rx.get_string())
-    # Not tracking in state for now — just parsed
+    state.softkeys.cc_names = names
 
 
 def handle_profile_path_reply(rx, state):
