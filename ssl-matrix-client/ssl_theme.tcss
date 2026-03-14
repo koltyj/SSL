@@ -36,3 +36,57 @@ TabPane Static {
     color: $foreground;
     padding: 1 2;
 }
+
+/* Secondary tab view widgets */
+RoutingView {
+    color: $foreground;
+    padding: 1 2;
+}
+
+TemplatesView {
+    color: $foreground;
+    padding: 1 2;
+}
+
+SettingsView {
+    color: $foreground;
+    padding: 1 2;
+}
+
+/* ChannelView: horizontal scroll container for 16 strips */
+ChannelView {
+    height: 1fr;
+}
+
+/* ChannelStrip: single scribble-strip column */
+ChannelStrip {
+    width: 12;
+    height: 100%;
+    border: tall $surface;
+    padding: 0 1;
+    background: $surface;
+    content-align: center top;
+}
+
+/* Flash highlight when a channel value changes */
+ChannelStrip.highlighted {
+    background: $accent 30%;
+    border: tall $accent;
+}
+
+/* Channel name — bold, primary green */
+.strip-name {
+    color: $primary;
+    text-style: bold;
+}
+
+/* Channel number — muted */
+.strip-num {
+    color: $text-muted;
+}
+
+/* Insert routing line — muted italic */
+.strip-inserts {
+    color: $text-muted;
+    text-style: italic;
+}
