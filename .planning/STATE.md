@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 05-terminal-ui-01-PLAN.md
-last_updated: "2026-03-14T14:13:46.696Z"
+stopped_at: Completed 05-terminal-ui-02-PLAN.md
+last_updated: "2026-03-14T14:19:10.164Z"
 last_activity: "2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass."
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 13
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -58,6 +58,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 04-advanced-workflow-features P03 | 2 | 1 tasks | 1 files |
 | Phase 04-advanced-workflow-features P03 | 10min | 2 tasks | 2 files |
 | Phase 05-terminal-ui P01 | 15 | 2 tasks | 9 files |
+| Phase 05-terminal-ui P02 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 04-advanced-workflow-features]: do_split status/clear skip _require_connected — pure software bookkeeping with no UDP
 - [Phase 05-terminal-ui]: _on_state_changed fires OUTSIDE the lock in _recv_loop — posting inside would deadlock since the Textual handler re-acquires the lock to read state
 - [Phase 05-terminal-ui]: BINDINGS annotated with ClassVar to satisfy RUF012 lint rule in Textual subclasses
+- [Phase 05-terminal-ui]: query() iterator used in on_ssl_app_state_updated instead of query_one() to tolerate unmounted ChannelView
+- [Phase 05-terminal-ui]: First DAW layer used for all 16 channel protocol display — per-layer breakdown deferred to Settings tab
 
 ### Pending Todos
 
@@ -125,6 +128,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T14:13:46.694Z
-Stopped at: Completed 05-terminal-ui-01-PLAN.md
+Last session: 2026-03-14T14:19:10.162Z
+Stopped at: Completed 05-terminal-ui-02-PLAN.md
 Resume file: None
