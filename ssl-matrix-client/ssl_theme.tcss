@@ -1,0 +1,38 @@
+/* SSL Matrix Console — Textual CSS stylesheet
+   Uses TCSS variables from the registered "ssl-console" theme.
+*/
+
+/* Status bar: docked at bottom, 1 line tall */
+SSLStatusBar {
+    dock: bottom;
+    height: 1;
+    width: 1fr;
+    background: $panel;
+    color: $foreground;
+    padding: 0 1;
+}
+
+/* Tab content fills remaining vertical space */
+TabbedContent {
+    height: 1fr;
+}
+
+/* Tab header bar */
+TabbedContent > TabBar {
+    background: $panel;
+}
+
+/* Individual tab labels */
+Tab {
+    color: $foreground;
+}
+
+Tab.-active {
+    color: $primary;
+}
+
+/* Placeholder content widgets */
+TabPane Static {
+    color: $foreground;
+    padding: 1 2;
+}

@@ -38,6 +38,9 @@ def make_client():
     client._needs_resync = False
     client._dispatch = {}
     client._split_config = None
+    client._on_state_changed = None
+    client._on_desk_offline = None
+    client._on_desk_online = None
     return client
 
 
