@@ -81,12 +81,22 @@ Plans:
 ### Phase 5: Terminal UI
 **Goal**: A terminal-based UI for real-time console state monitoring and interactive control — bringing ssl-matrix-client from a command-driven REPL to a persistent, visual dashboard in the terminal
 **Depends on**: Phase 4
-**Requirements**: TBD
+**Requirements**: TUI-01, TUI-02, TUI-03, TUI-04, TUI-05, TUI-06, TUI-07, TUI-08, TUI-09, TUI-10
 **Success Criteria** (what must be TRUE):
-  TBD (run /gsd:plan-phase 5 to define)
-**Plans**: TBD
+  1. `python3 -m ssl-matrix-client tui` launches a Textual-based TUI that connects to the console and displays real-time state
+  2. Channel strips view shows 16 channels in a horizontal row mimicking the physical console, with live-updating names, DAW protocol, and automation mode
+  3. Status bar shows connection health dot (green/yellow/red) and active project name
+  4. Tab navigation (keys 1-4) switches between Channels, Routing, Templates, and Settings views
+  5. Command palette (`:` or `/`) provides fuzzy-searchable console commands
+  6. State changes from recv thread appear reactively via Textual's post_message bridge with flash-highlight on changed values
+  7. Full-screen disconnect overlay appears when console goes offline, dismisses on reconnect
+  8. SSL-inspired custom theme (dark background, green/amber accents) applied throughout
+**Plans**: 4 plans
 Plans:
-- [ ] TBD (run /gsd:plan-phase 5 to break down)
+- [ ] 05-01-PLAN.md — Foundation: Textual dependency, client hooks, SSLApp shell with theme, tabs, status bar, and thread bridge
+- [ ] 05-02-PLAN.md — Channel strips view with flash-highlight and disconnect overlay
+- [ ] 05-03-PLAN.md — Command palette provider and secondary tab views (Routing, Templates, Settings)
+- [ ] 05-04-PLAN.md — Live console verification checkpoint
 
 ### Phase 6: Native macOS Dock App
 **Goal**: A native macOS application (dock app, not menu bar) wraps ssl-matrix-client with a visual interface for console control, status monitoring, and session management — replacing the broken MatrixRemote Java app with a modern, reliable GUI
@@ -110,5 +120,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
 | 3. Console Surface Features | 2/2 | Complete | 2026-03-13 |
 | 4. Advanced Workflow Features | 3/3 | Complete   | 2026-03-14 |
-| 5. Terminal UI | 0/TBD | Not started | - |
+| 5. Terminal UI | 0/4 | Not started | - |
 | 6. Native macOS Dock App | 0/TBD | Not started | - |
