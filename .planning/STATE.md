@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Phase 5 context gathered — ready for planning
-last_updated: "2026-03-14T09:00:48.394Z"
+stopped_at: Completed 05-terminal-ui-01-PLAN.md
+last_updated: "2026-03-14T14:13:46.696Z"
 last_activity: "2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass."
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 7
+  total_plans: 13
+  completed_plans: 8
   percent: 50
 ---
 
@@ -57,6 +57,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 04-advanced-workflow-features P01 | 4min | 2 tasks | 3 files |
 | Phase 04-advanced-workflow-features P03 | 2 | 1 tasks | 1 files |
 | Phase 04-advanced-workflow-features P03 | 10min | 2 tasks | 2 files |
+| Phase 05-terminal-ui P01 | 15 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,8 @@ Recent decisions affecting current work:
 - [Phase 04-advanced-workflow-features]: do_split status/clear skip _require_connected — pure software bookkeeping with no UDP
 - [Phase 04-advanced-workflow-features]: Template load holds lock briefly for diff, releases before prompting user to avoid blocking recv thread during input()
 - [Phase 04-advanced-workflow-features]: do_split status/clear skip _require_connected — pure software bookkeeping with no UDP
+- [Phase 05-terminal-ui]: _on_state_changed fires OUTSIDE the lock in _recv_loop — posting inside would deadlock since the Textual handler re-acquires the lock to read state
+- [Phase 05-terminal-ui]: BINDINGS annotated with ClassVar to satisfy RUF012 lint rule in Textual subclasses
 
 ### Pending Todos
 
@@ -122,6 +125,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T09:00:48.391Z
-Stopped at: Phase 5 context gathered — ready for planning
-Resume file: .planning/phases/05-terminal-ui/05-CONTEXT.md
+Last session: 2026-03-14T14:13:46.694Z
+Stopped at: Completed 05-terminal-ui-01-PLAN.md
+Resume file: None
