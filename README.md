@@ -6,7 +6,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-274%20passing-brightgreen)
 
-![TUI Screenshot](docs/screenshots/tui-channels.png)
+![TUI Screenshot](docs/screenshots/tui-channels.svg)
 
 ## What is this
 
