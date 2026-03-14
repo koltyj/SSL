@@ -15,7 +15,7 @@ import pytest
 pkg = importlib.import_module("ssl-matrix-client")
 sys.modules["ssl_matrix_client"] = pkg
 
-for sub in ["protocol", "models", "client", "cli", "templates"]:
+for sub in ["protocol", "models", "client", "cli", "templates", "tui"]:
     try:
         mod = importlib.import_module(f"ssl-matrix-client.{sub}")
         sys.modules[f"ssl_matrix_client.{sub}"] = mod

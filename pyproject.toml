@@ -1,0 +1,19 @@
+[project]
+name = "ssl-matrix-client"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = ["textual>=0.80.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7,<9", "pytest-asyncio>=0.23", "ruff>=0.9", "pre-commit>=3,<5"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "SIM", "RUF"]
+ignore = ["E501", "SIM105"]

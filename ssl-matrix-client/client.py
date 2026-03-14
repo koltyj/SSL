@@ -62,6 +62,10 @@ class SSLMatrixClient:
         self._needs_resync = False
         # Split board bookkeeping
         self._split_config = None
+        # TUI callback hooks (set by SSLApp to bridge recv thread → Textual event loop)
+        self._on_state_changed = None  # Callable | None — fires outside lock after each dispatch
+        self._on_desk_offline = None  # Callable(attempt: int) | None
+        self._on_desk_online = None  # Callable | None
         self._dispatch = self._build_dispatch_table()
 
     def _build_dispatch_table(self):
@@ -239,6 +243,9 @@ class SSLMatrixClient:
                     # check whether we were in a reconnect attempt and schedule re-sync.
                     if rx.cmd_code == MessageCode.GET_DESK_REPLY:
                         self._on_desk_came_online()
+                    # Fire state-changed hook OUTSIDE the lock so post_message cannot deadlock.
+                    if self._on_state_changed:
+                        self._on_state_changed()
                 else:
                     log.debug("Unhandled cmd: %d (%d bytes)", rx.cmd_code, len(data))
 
@@ -303,6 +310,8 @@ class SSLMatrixClient:
             self._reconnect_attempts,
             MAX_RECONNECT_ATTEMPTS,
         )
+        if self._on_desk_offline:
+            self._on_desk_offline(self._reconnect_attempts)
         self._send_get_desk()
 
     def _on_desk_came_online(self):
@@ -319,6 +328,8 @@ class SSLMatrixClient:
         if reconnecting:
             log.info("Watchdog: reconnected, scheduling request_sync()")
             self._needs_resync = True
+        if self._on_desk_online:
+            self._on_desk_online()
 
     def _send_get_desk(self):
         """Send GET_DESK discovery packet."""
