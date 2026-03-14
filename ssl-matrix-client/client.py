@@ -31,6 +31,12 @@ from .protocol import (
 
 log = logging.getLogger(__name__)
 
+# Watchdog / reconnect constants
+HEARTBEAT_TIMEOUT = 35.0  # Console sends heartbeat ~every 30s; declare stale after 35s
+WATCHDOG_INTERVAL = 5.0  # Check heartbeat every 5s
+RECONNECT_DELAY = 5.0  # Delay between reconnect attempts
+MAX_RECONNECT_ATTEMPTS = 10  # Give up after this many unanswered GET_DESK probes
+
 
 class SSLMatrixClient:
     """UDP client for SSL Matrix console control.
@@ -47,8 +53,15 @@ class SSLMatrixClient:
         self.state = ConsoleState()
         self._sock = None
         self._recv_thread = None
+        self._watchdog_thread = None
         self._running = False
         self._lock = threading.Lock()
+        # Reconnect guard state
+        self._reconnecting = False
+        self._reconnect_attempts = 0
+        self._needs_resync = False
+        # Split board bookkeeping
+        self._split_config = None
         self._dispatch = self._build_dispatch_table()
 
     def _build_dispatch_table(self):
@@ -222,6 +235,10 @@ class SSLMatrixClient:
                             handler(rx, self.state)
                         except Exception as e:
                             log.warning("Handler error for cmd %d: %s", rx.cmd_code, e)
+                    # Post-dispatch hook: after GET_DESK_REPLY sets desk online,
+                    # check whether we were in a reconnect attempt and schedule re-sync.
+                    if rx.cmd_code == MessageCode.GET_DESK_REPLY:
+                        self._on_desk_came_online()
                 else:
                     log.debug("Unhandled cmd: %d (%d bytes)", rx.cmd_code, len(data))
 
@@ -234,6 +251,74 @@ class SSLMatrixClient:
                     log.warning("Socket error in recv loop")
                 self._running = False
                 break
+
+    # --- Watchdog / reconnect ---
+
+    def _watchdog_loop(self):
+        """Background thread: detect stale heartbeat and trigger reconnect.
+
+        Monitors the SSL UDP heartbeat only.  ipMIDI connectivity (HUI/MCU) is
+        on a separate port/protocol and is not monitored here.
+        """
+        while self._running:
+            time.sleep(WATCHDOG_INTERVAL)
+
+            # Handle re-sync request (set by _on_desk_came_online outside lock)
+            if self._needs_resync:
+                self._needs_resync = False
+                self.request_sync()
+                continue
+
+            with self._lock:
+                online = self.state.desk.online
+                age = self.state.desk.heartbeat_age
+                reconnecting = self._reconnecting
+                attempts = self._reconnect_attempts
+
+            # If currently reconnecting and hit max attempts, give up
+            if reconnecting and attempts >= MAX_RECONNECT_ATTEMPTS:
+                log.error("Watchdog: gave up reconnecting after %d attempts", attempts)
+                with self._lock:
+                    self._reconnecting = False
+                    self._reconnect_attempts = 0
+                continue
+
+            # Trigger reconnect on stale heartbeat
+            if online and age > HEARTBEAT_TIMEOUT and not reconnecting:
+                log.warning(
+                    "Watchdog: heartbeat stale (%.1fs > %.1fs), triggering reconnect",
+                    age,
+                    HEARTBEAT_TIMEOUT,
+                )
+                self._trigger_reconnect()
+
+    def _trigger_reconnect(self):
+        """Mark desk offline and send GET_DESK to re-discover the console."""
+        with self._lock:
+            self._reconnecting = True
+            self._reconnect_attempts += 1
+            self.state.desk.online = False
+        log.warning(
+            "Watchdog: reconnect attempt %d/%d",
+            self._reconnect_attempts,
+            MAX_RECONNECT_ATTEMPTS,
+        )
+        self._send_get_desk()
+
+    def _on_desk_came_online(self):
+        """Called after GET_DESK_REPLY sets desk.online = True.
+
+        If we were in a reconnect attempt, clear the guard flags and schedule
+        a full state re-sync outside the recv lock.
+        """
+        with self._lock:
+            reconnecting = self._reconnecting
+            if reconnecting:
+                self._reconnecting = False
+                self._reconnect_attempts = 0
+        if reconnecting:
+            log.info("Watchdog: reconnected, scheduling request_sync()")
+            self._needs_resync = True
 
     def _send_get_desk(self):
         """Send GET_DESK discovery packet."""
@@ -254,7 +339,7 @@ class SSLMatrixClient:
         self.send_raw(data)
 
     def connect(self):
-        """Create socket, start recv thread, send GET_DESK."""
+        """Create socket, start recv thread, start watchdog, send GET_DESK."""
         if self._running:
             return
         try:
@@ -262,6 +347,8 @@ class SSLMatrixClient:
             self._running = True
             self._recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
             self._recv_thread.start()
+            self._watchdog_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
+            self._watchdog_thread.start()
             self._send_get_desk()
         except Exception:
             self._running = False
@@ -377,7 +464,7 @@ class SSLMatrixClient:
             self.state.synced = True
 
     def disconnect(self):
-        """Stop recv thread and close socket."""
+        """Stop recv thread, stop watchdog, and close socket."""
         self._running = False
         if self._sock:
             try:
@@ -388,6 +475,9 @@ class SSLMatrixClient:
         if self._recv_thread:
             self._recv_thread.join(timeout=2)
             self._recv_thread = None
+        if self._watchdog_thread:
+            self._watchdog_thread.join(timeout=2)
+            self._watchdog_thread = None
         with self._lock:
             self.state.desk.online = False
 
