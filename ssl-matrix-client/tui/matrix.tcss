@@ -1,0 +1,74 @@
+Screen {
+    background: #1a1a1a;
+}
+
+#status-bar {
+    dock: top;
+}
+
+#main-content {
+    height: 1fr;
+    overflow-y: auto;
+    padding: 0 1;
+}
+
+#top-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+#channels-box {
+    width: 2fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    padding: 0;
+    height: auto;
+}
+
+#layers-box {
+    width: 1fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    height: auto;
+    margin-left: 1;
+}
+
+#mid-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+#inserts-box {
+    width: 1fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    height: auto;
+}
+
+#xpatch-box {
+    width: 1fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    height: auto;
+    margin-left: 1;
+}
+
+#bottom-row {
+    height: auto;
+    margin-bottom: 1;
+}
+
+#project-box {
+    width: 1fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    height: auto;
+}
+
+#tr-box {
+    width: 1fr;
+    border: solid #555555;
+    border-title-color: #aaaaaa;
+    height: auto;
+    margin-left: 1;
+}
