@@ -52,8 +52,8 @@ Note: DAW switching between Pro Tools and Ableton is handled by hardware buttons
 
 ### Session & Workflow
 
-- [ ] **SESS-01**: Console state templates saveable/loadable, each linked to a specific DAW project file
-- [ ] **SESS-02**: Routing recall — insert matrix and XPatch state restored per session template
+- [x] **SESS-01**: Console state templates saveable/loadable, each linked to a specific DAW project file
+- [x] **SESS-02**: Routing recall — insert matrix and XPatch state restored per session template
 - [x] **SPLIT-01**: Split board mode — left 8 faders to one DAW, right 8 to another, switchable via single command
 - [x] **BRDG-01**: Health monitoring detects ipMIDI sync loss and auto-reconnects
 
@@ -109,8 +109,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | ADV-01 | Phase 3 | Complete |
 | ADV-02 | Phase 3 | Complete |
 | ADV-03 | Phase 3 | Complete |
-| SESS-01 | Phase 4 | Pending |
-| SESS-02 | Phase 4 | Pending |
+| SESS-01 | Phase 4 | Complete |
+| SESS-02 | Phase 4 | Complete |
 | SPLIT-01 | Phase 4 | Complete |
 | BRDG-01 | Phase 4 | Complete |
 | APP-01 | Phase 5 | Pending |

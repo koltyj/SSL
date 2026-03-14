@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-03-14T08:35:46.350Z"
-last_activity: "2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off."
+status: completed
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-14T08:37:15.718Z"
+last_activity: "2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass."
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 5
+  completed_plans: 6
   percent: 50
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 2 of 5 (Capabilities Audit) — COMPLETE
-Plan: 2 of 2 (Phase 2) — COMPLETE
-Status: Phase 2 fully complete — all 105 handlers audited, CAPABILITIES.md user-verified, ready for Phase 3
-Last activity: 2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off.
+Phase: 4 of 6 (Advanced Workflow Features) — IN PROGRESS
+Plan: 1 of N (Phase 4) — COMPLETE
+Status: Phase 4 Plan 1 complete — templates.py with save/load/diff/apply/CRUD, 42 unit tests passing
+Last activity: 2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass.
 
 Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 
@@ -54,7 +54,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 02-capabilities-audit P02 | 26min | 1 task | 1 files |
 | Phase 03-console-surface-features P01 | 2min | 2 tasks | 4 files |
 | Phase 03-console-surface-features P02 | 5min | 1 tasks | 3 files |
-| Phase 04-advanced-workflow-features P02 | 4min | 2 tasks | 3 files |
+| Phase 04-advanced-workflow-features P01 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -86,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 03-console-surface-features]: Wheel mode label mapping 0-3 only (Pan/Linear/Boost-Cut/Off); values 4-5 accepted by set but shown as Unknown on read
 - [Phase 03-console-surface-features]: SuperCue/Auto-Mon hardware-only on V3.0/5 — documented via do_supercue, no UDP path needed
 - [Phase 03-console-surface-features]: Keymap name whitelist (keymap1-4) enforced in do_softkey_edit; NONE cannot open edit session
+- [Phase 04-advanced-workflow-features]: XPatch never applied via SET commands in templates — all 7 XPatch SET commands fail silently on this console; stored in JSON for reference only
+- [Phase 04-advanced-workflow-features]: load_template returns raw dict (no dataclass reconstruction) — callers index dict keys directly, avoids schema versioning complexity
+- [Phase 04-advanced-workflow-features]: Routing restore order enforced in build_apply_commands: device names before channel slot assignments (Pitfall 3)
 - [Phase 04-advanced-workflow-features]: Watchdog monitors SSL UDP heartbeat only — ipMIDI (HUI/MCU) is separate protocol, out of scope
 - [Phase 04-advanced-workflow-features]: _needs_resync flag pattern avoids lock deadlock in _recv_loop when scheduling request_sync() after reconnect
 - [Phase 04-advanced-workflow-features]: Split board is purely client-side bookkeeping — fader group assignment is console hardware surface config, not UDP
@@ -113,6 +116,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T08:35:46.348Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-03-14T08:37:15.716Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None

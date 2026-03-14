@@ -109,6 +109,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Compatibility Verification | 2/2 | Complete | 2026-03-11 |
 | 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
 | 3. Console Surface Features | 2/2 | Complete | 2026-03-13 |
-| 4. Advanced Workflow Features | 1/3 | In Progress|  |
+| 4. Advanced Workflow Features | 2/3 | In Progress|  |
 | 5. Terminal UI | 0/TBD | Not started | - |
 | 6. Native macOS Dock App | 0/TBD | Not started | - |
