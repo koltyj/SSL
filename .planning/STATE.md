@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: "Completed 03-02 Task 1 — softkey CLI commands + builder implemented. At checkpoint: awaiting live console verification (Task 2)."
-last_updated: "2026-03-13T21:22:19.517Z"
+stopped_at: Phase 4 context gathered
+last_updated: "2026-03-14T08:15:09.925Z"
 last_activity: "2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off."
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 2
   total_plans: 6
   completed_plans: 4
@@ -94,6 +94,10 @@ Recent decisions affecting current work:
 - ~~Map soft key, V-pot, SuperCue protocol capabilities~~ ANSWERED: SuperCue NOT IN PROTOCOL; softkey feasible with keymap; V-pot feasible with CC config
 - Begin Phase 3 (Surface Features) planning
 
+### Roadmap Evolution
+
+- Phase 5 (Terminal UI) added before Dock App; former Phase 5 (Dock App) renumbered to Phase 6
+
 ### Blockers/Concerns
 
 - ~~**P0:** ipMIDI Tahoe 26.2 compatibility~~ **RESOLVED**
@@ -105,6 +109,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:09:45.205Z
-Stopped at: Completed 03-02 Task 1 — softkey CLI commands + builder implemented. At checkpoint: awaiting live console verification (Task 2).
-Resume file: None
+Last session: 2026-03-14T08:15:09.922Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/phases/04-advanced-workflow-features/04-CONTEXT.md
