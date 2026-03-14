@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-14T08:37:15.718Z"
+stopped_at: "Completed 04-03-PLAN.md (Task 1 of 2 — paused at checkpoint:human-verify)"
+last_updated: "2026-03-14T08:42:14.849Z"
 last_activity: "2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass."
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -55,6 +55,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 03-console-surface-features P01 | 2min | 2 tasks | 4 files |
 | Phase 03-console-surface-features P02 | 5min | 1 tasks | 3 files |
 | Phase 04-advanced-workflow-features P01 | 4min | 2 tasks | 3 files |
+| Phase 04-advanced-workflow-features P03 | 2 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Recent decisions affecting current work:
 - [Phase 04-advanced-workflow-features]: Watchdog monitors SSL UDP heartbeat only — ipMIDI (HUI/MCU) is separate protocol, out of scope
 - [Phase 04-advanced-workflow-features]: _needs_resync flag pattern avoids lock deadlock in _recv_loop when scheduling request_sync() after reconnect
 - [Phase 04-advanced-workflow-features]: Split board is purely client-side bookkeeping — fader group assignment is console hardware surface config, not UDP
+- [Phase 04-advanced-workflow-features]: Template load holds lock briefly for diff, releases before prompting user to avoid blocking recv thread during input()
+- [Phase 04-advanced-workflow-features]: do_split status/clear skip _require_connected — pure software bookkeeping with no UDP
 
 ### Pending Todos
 
@@ -116,6 +119,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T08:37:15.716Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-14T08:42:14.847Z
+Stopped at: Completed 04-03-PLAN.md (Task 1 of 2 — paused at checkpoint:human-verify)
 Resume file: None

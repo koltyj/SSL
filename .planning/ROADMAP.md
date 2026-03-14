@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Compatibility Verification** - Confirm ipMIDI, MatrixRemote, and macOS Tahoe 26.2 work before writing any code
 - [ ] **Phase 2: Capabilities Audit** - Wire-test every ssl-matrix-client protocol handler against the live console and document what's possible
 - [ ] **Phase 3: Console Surface Features** - Soft keys, V-pots, SuperCue integration via ssl-matrix-client
-- [ ] **Phase 4: Advanced Workflow Features** - Split board mode, session templates, project linking, connection monitoring
+- [x] **Phase 4: Advanced Workflow Features** - Split board mode, session templates, project linking, connection monitoring (completed 2026-03-14)
 - [ ] **Phase 5: Terminal UI** - Real-time console monitoring and control in the terminal
 - [ ] **Phase 6: Native macOS Dock App** - GUI application wrapping ssl-matrix-client (language TBD)
 
@@ -109,6 +109,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Compatibility Verification | 2/2 | Complete | 2026-03-11 |
 | 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
 | 3. Console Surface Features | 2/2 | Complete | 2026-03-13 |
-| 4. Advanced Workflow Features | 2/3 | In Progress|  |
+| 4. Advanced Workflow Features | 3/3 | Complete   | 2026-03-14 |
 | 5. Terminal UI | 0/TBD | Not started | - |
 | 6. Native macOS Dock App | 0/TBD | Not started | - |
