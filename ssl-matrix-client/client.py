@@ -716,6 +716,47 @@ class SSLMatrixClient:
         ds = self.state.desk.serial
         self.send(routing.build_set_chan_stereo_insert(ds, self.my_serial, first, second, stereo))
 
+    # --- Split board state (software bookkeeping, no UDP) ---
+
+    def set_split(self, left_layers: list, right_layers: list) -> dict:
+        """Store fader group assignment for a split board configuration.
+
+        The SSL Matrix exposes all 4 DAW layers simultaneously at the protocol
+        level.  Fader group assignment (which physical faders control which DAW
+        layer) is set via hardware buttons on the console surface — there is no
+        UDP command for it.  This method is pure software bookkeeping so the
+        application can track the user's intended assignment.
+
+        Args:
+            left_layers:  Layer numbers (1-4) assigned to the left fader group.
+            right_layers: Layer numbers (1-4) assigned to the right fader group.
+
+        Returns:
+            The stored config dict ``{"left": [...], "right": [...]}``.
+
+        Raises:
+            ValueError: If any layer number is outside the valid range 1-4.
+        """
+        for layer in list(left_layers) + list(right_layers):
+            if layer not in (1, 2, 3, 4):
+                raise ValueError(f"Invalid layer number {layer!r}: must be 1-4")
+        self._split_config = {"left": list(left_layers), "right": list(right_layers)}
+        return self._split_config
+
+    def get_split(self) -> "dict | None":
+        """Return the current split config or None if not active.
+
+        No UDP communication — returns the value last set by set_split().
+        """
+        return self._split_config
+
+    def clear_split(self):
+        """Clear the split board config.
+
+        No UDP communication — resets the bookkeeping state to None.
+        """
+        self._split_config = None
+
     def send_custom(self, cmd_code, payload_hex=""):
         """Send a raw message with arbitrary cmd code and hex payload."""
         msg = TxMessage(cmd_code, self.state.desk.serial, self.my_serial)
