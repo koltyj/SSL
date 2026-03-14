@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-14T08:15:09.925Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-14T08:35:46.350Z"
 last_activity: "2026-03-13 — Phase 2 complete: 63 PASS / 6 PARTIAL / 9 FAIL / 27 SKIP across 105 handlers. User signed off."
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 4
+  total_plans: 9
+  completed_plans: 5
   percent: 50
 ---
 
@@ -54,6 +54,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 02-capabilities-audit P02 | 26min | 1 task | 1 files |
 | Phase 03-console-surface-features P01 | 2min | 2 tasks | 4 files |
 | Phase 03-console-surface-features P02 | 5min | 1 tasks | 3 files |
+| Phase 04-advanced-workflow-features P02 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 03-console-surface-features]: Wheel mode label mapping 0-3 only (Pan/Linear/Boost-Cut/Off); values 4-5 accepted by set but shown as Unknown on read
 - [Phase 03-console-surface-features]: SuperCue/Auto-Mon hardware-only on V3.0/5 — documented via do_supercue, no UDP path needed
 - [Phase 03-console-surface-features]: Keymap name whitelist (keymap1-4) enforced in do_softkey_edit; NONE cannot open edit session
+- [Phase 04-advanced-workflow-features]: Watchdog monitors SSL UDP heartbeat only — ipMIDI (HUI/MCU) is separate protocol, out of scope
+- [Phase 04-advanced-workflow-features]: _needs_resync flag pattern avoids lock deadlock in _recv_loop when scheduling request_sync() after reconnect
+- [Phase 04-advanced-workflow-features]: Split board is purely client-side bookkeeping — fader group assignment is console hardware surface config, not UDP
 
 ### Pending Todos
 
@@ -109,6 +113,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T08:15:09.922Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-advanced-workflow-features/04-CONTEXT.md
+Last session: 2026-03-14T08:35:46.348Z
+Stopped at: Completed 04-02-PLAN.md
+Resume file: None
