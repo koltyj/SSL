@@ -8,7 +8,7 @@ Provides:
 """
 
 import argparse
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from textual.app import App, ComposeResult
 from textual.message import Message
@@ -16,6 +16,9 @@ from textual.theme import Theme
 from textual.widgets import Static, TabbedContent, TabPane
 
 from .client import SSLMatrixClient
+from .tui_commands import ConsoleCmdProvider
+from .tui_views import RoutingView, SettingsView, TemplatesView
+from .tui_widgets import ChannelView, DisconnectOverlay
 
 # SSL-inspired dark theme
 SSL_THEME = Theme(
@@ -109,6 +112,7 @@ class SSLApp(App):
 
     CSS_PATH = "ssl_theme.tcss"
     TITLE = "SSL Matrix Console"
+    COMMANDS: ClassVar[set] = App.COMMANDS | {ConsoleCmdProvider}
     BINDINGS: ClassVar[list] = [
         ("1", "show_tab('channels')", "Channels"),
         ("2", "show_tab('routing')", "Routing"),
@@ -144,18 +148,19 @@ class SSLApp(App):
         super().__init__(**kwargs)
         self.client = SSLMatrixClient(console_ip)
         self._last_template = ""
+        self._disconnect_overlay: Optional[DisconnectOverlay] = None
 
     def compose(self) -> ComposeResult:
         """Build the tabbed layout with status bar docked at bottom."""
         with TabbedContent(initial="channels"):
             with TabPane("1 Channels", id="channels"):
-                yield Static("Channels view placeholder")
+                yield ChannelView()
             with TabPane("2 Routing", id="routing"):
-                yield Static("Routing view placeholder")
+                yield RoutingView()
             with TabPane("3 Templates", id="templates"):
-                yield Static("Templates view placeholder")
+                yield TemplatesView()
             with TabPane("4 Settings", id="settings"):
-                yield Static("Settings view placeholder")
+                yield SettingsView()
         yield SSLStatusBar(id="status-bar")
 
     def action_show_tab(self, tab: str) -> None:
@@ -205,6 +210,13 @@ class SSLApp(App):
                     for ci in self.client.state.channel_inserts
                 ],
                 "last_template": self._last_template,
+                # Secondary view fields
+                "devices": [(d.number, d.name, d.is_assigned) for d in self.client.state.devices],
+                "console_name": self.client.state.desk.console_name,
+                "firmware": self.client.state.desk.firmware,
+                "motors_off": getattr(self.client.state, "motors_off", False),
+                "mdac_meters": getattr(self.client.state, "mdac_meters", False),
+                "split_config": self.client.get_split(),
             }
         self.post_message(self.StateUpdated(snapshot))
 
@@ -219,8 +231,29 @@ class SSLApp(App):
     # --- Message handlers ---
 
     def on_ssl_app_state_updated(self, msg: "SSLApp.StateUpdated") -> None:
-        """Handle StateUpdated: push snapshot into status bar."""
+        """Handle StateUpdated: push snapshot into status bar, channel view, and secondary views."""
         self.query_one(SSLStatusBar).update_from(msg.snapshot)
+        for channel_view in self.query(ChannelView):
+            channel_view.update_from(msg.snapshot)
+        for view_cls in (RoutingView, SettingsView):
+            view = self.query_one(view_cls, default=None)
+            if view is not None:
+                view.update_from(msg.snapshot)
+
+    def on_ssl_app_console_offline(self, msg: "SSLApp.ConsoleOffline") -> None:
+        """Handle ConsoleOffline: push disconnect overlay or update attempt count."""
+        if self._disconnect_overlay is not None:
+            self._disconnect_overlay.update_attempt(msg.attempt)
+        else:
+            overlay = DisconnectOverlay(attempt=msg.attempt)
+            self._disconnect_overlay = overlay
+            self.push_screen(overlay)
+
+    def on_ssl_app_console_online(self, _msg: "SSLApp.ConsoleOnline") -> None:
+        """Handle ConsoleOnline: dismiss disconnect overlay if showing."""
+        if self._disconnect_overlay is not None:
+            self.pop_screen()
+            self._disconnect_overlay = None
 
     def on_unmount(self) -> None:
         """Disconnect client on app exit."""
