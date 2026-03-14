@@ -414,12 +414,13 @@ def handle_edit_chain_reply(rx, state):
     xp = state.xpatch
     chain = rx.get_int()
     xp.edit_chain = chain if chain != 0 else -1
-    # Read chain elements (8 links typically)
+    xp.edit_chain_links = []
     while rx.remaining >= 8:
-        rx.get_int()  # link index (skip)
-        _src = rx.get_int()
+        link_index = rx.get_int()
+        src = rx.get_int()
+        xp.edit_chain_links.append((link_index, src))
     if rx.remaining >= 1:
-        _replace_mode = rx.get_boolean()
+        xp.replace_mode = rx.get_boolean()
 
 
 def handle_edit_chain_touched_reply(rx, state):
@@ -429,5 +430,4 @@ def handle_edit_chain_touched_reply(rx, state):
 
 def handle_replace_mode_reply(rx, state):
     """Parse SET_XPATCH_LINK_REPLACE_MODE_REPLY (cmd=4091). Payload: boolean mode."""
-    # Just consume — no state to update beyond what edit_chain_reply provides
-    _mode = rx.get_boolean()
+    state.xpatch.replace_mode = rx.get_boolean()

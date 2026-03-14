@@ -188,7 +188,9 @@ class XpatchState:
     midi_enabled: bool = False
     midi_channel: int = 0
     edit_chain: int = -1
+    edit_chain_links: list = field(default_factory=list)  # list of (link_index, src) tuples
     edit_chain_touched: bool = False
+    replace_mode: bool = False
 
 
 @dataclass

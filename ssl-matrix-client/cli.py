@@ -1165,6 +1165,31 @@ class SSLMatrixCLI(cmd.Cmd):
                 "xpatch_presets": [
                     {"index": p.index, "name": p.name, "used": p.used} for p in s.xpatch.presets
                 ],
+                "xpatch_chains": [
+                    {"index": c.index, "name": c.name, "used": c.used, "links": c.links}
+                    for c in s.xpatch.chains
+                ],
+                "xpatch_channels": [
+                    {
+                        "num": c.number,
+                        "device": c.device_name,
+                        "dest": c.dest_name,
+                        "in_10db": c.input_minus_10db,
+                        "out_10db": c.output_minus_10db,
+                        "mode": c.mode,
+                    }
+                    for c in s.xpatch.channels
+                ],
+                "xpatch_midi": {
+                    "enabled": s.xpatch.midi_enabled,
+                    "channel": s.xpatch.midi_channel,
+                },
+                "xpatch_edit_chain": {
+                    "chain": s.xpatch.edit_chain,
+                    "links": [{"link": l, "src": src} for l, src in s.xpatch.edit_chain_links],
+                    "replace_mode": s.xpatch.replace_mode,
+                    "touched": s.xpatch.edit_chain_touched,
+                },
                 "automation_mode": "Delta" if s.automation_mode else "Legacy",
                 "motors_off": bool(s.motors_off),
                 "mdac_meters": bool(s.mdac_meters),
