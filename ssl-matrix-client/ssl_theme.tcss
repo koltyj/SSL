@@ -68,6 +68,12 @@ ChannelStrip {
     content-align: center top;
 }
 
+/* Selected channel strip */
+ChannelStrip.selected {
+    background: $primary 20%;
+    border: tall $primary;
+}
+
 /* Flash highlight when a channel value changes */
 ChannelStrip.highlighted {
     background: $accent 30%;

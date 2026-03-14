@@ -6,17 +6,19 @@ and XpatchSetupHandler from the decompiled Java sources.
 
 import logging
 
+from ..models import XpatchChain, XpatchPreset, XpatchRoute
 from ..protocol import MessageCode, TxMessage
-from ..models import XpatchPreset, XpatchChain, XpatchRoute
 
 log = logging.getLogger(__name__)
 
 NUM_CHANS = 16  # XPatch has 16 channels
+NUM_CHAIN_ELEMENTS = 8  # Chain link slots per chain (from Java getNumChainElements())
 
 
 # =============================================================================
 # Setup (XpatchSetupHandler)
 # =============================================================================
+
 
 def build_get_chan_setup(desk_serial, my_serial):
     """Build GET_XPATCH_CHAN_SETUP (cmd=2060). No payload."""
@@ -94,6 +96,7 @@ def build_clear_all(desk_serial, my_serial):
 # Routing (XpatchRoutingHandler)
 # =============================================================================
 
+
 def build_get_routing_data(desk_serial, my_serial):
     """Build GET_XPATCH_ROUTING_DATA (cmd=3050). No payload."""
     msg = TxMessage(MessageCode.GET_XPATCH_ROUTING_DATA, desk_serial, my_serial)
@@ -111,6 +114,7 @@ def build_set_route(desk_serial, my_serial, dest, src):
 # =============================================================================
 # Presets (XpatchPresetsHandler)
 # =============================================================================
+
 
 def build_get_presets_list(desk_serial, my_serial):
     """Build GET_XPATCH_PRESETS_LIST (cmd=2000). No payload."""
@@ -183,6 +187,7 @@ def build_send_preset_data(desk_serial, my_serial, index, name, srcs):
 # Chains (XpatchChainsHandler)
 # =============================================================================
 
+
 def build_get_chains_list(desk_serial, my_serial):
     """Build GET_XPATCH_CHAINS_LIST (cmd=4000). No payload."""
     msg = TxMessage(MessageCode.GET_XPATCH_CHAINS_LIST, desk_serial, my_serial)
@@ -238,14 +243,15 @@ def build_send_chain_data(desk_serial, my_serial, index, name, links):
     msg = TxMessage(MessageCode.SEND_CHAIN_DATA, desk_serial, my_serial)
     msg.write_int(index)
     msg.write_string(name)
-    for l in links:
-        msg.write_int(l)
+    for link in links:
+        msg.write_int(link)
     return msg.to_bytes()
 
 
 # =============================================================================
 # Handlers (Console -> Remote)
 # =============================================================================
+
 
 def handle_chan_setup_reply(rx, state):
     """Parse GET_XPATCH_CHAN_SETUP_REPLY (cmd=2061).
@@ -356,7 +362,7 @@ def handle_presets_list_reply(rx, state):
     """
     xp = state.xpatch
     xp.presets.clear()
-    while rx.remaining > 0:
+    while rx.remaining >= 4:
         index = rx.get_int()
         if index == -1:
             break
@@ -386,22 +392,20 @@ def handle_chains_list_reply(rx, state):
     """
     xp = state.xpatch
     xp.chains.clear()
-    while rx.remaining > 0:
+    while rx.remaining >= 4:
         index = rx.get_int()
         if index == -1:
             break
         used = rx.get_boolean()
         name = rx.get_string()
-        # Chain elements: read until we hit the next index or end
-        # The Java code uses remote.getNumChainElements() — typically 8
-        # We read available ints until we'd read the next chain's index
+        # Read exactly NUM_CHAIN_ELEMENTS link ints per chain.
+        # Must match Java's getNumChainElements() — always 8 for Matrix XPatch.
         links = []
-        # Conservatively read 8 link ints (standard chain size)
-        for _ in range(8):
-            if rx.remaining >= 4:
-                links.append(rx.get_int())
-            else:
+        for _ in range(NUM_CHAIN_ELEMENTS):
+            if rx.remaining < 4:
+                log.warning("Truncated chain data for chain '%s'", name)
                 break
+            links.append(rx.get_int())
         xp.chains.append(XpatchChain(index=index, used=used, name=name, links=links))
 
 

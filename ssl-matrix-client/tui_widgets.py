@@ -10,6 +10,7 @@ from typing import ClassVar, Optional
 
 from textual.app import ComposeResult
 from textual.containers import HorizontalScroll, Vertical
+from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widgets import Label, Static
@@ -27,10 +28,22 @@ class ChannelStrip(Static):
     auto_mode: reactive[str] = reactive("", init=False)
     insert_routing: reactive[str] = reactive("Ins: --", init=False)
     highlighted: reactive[bool] = reactive(False)
+    selected: reactive[bool] = reactive(False)
+
+    class Selected(Message):
+        """Posted when a channel strip is clicked."""
+
+        def __init__(self, channel_num: int) -> None:
+            super().__init__()
+            self.channel_num = channel_num
 
     def __init__(self, num: int, **kwargs) -> None:
         super().__init__("", id=f"ch-{num}", **kwargs)
         self.channel_num = num
+        self.can_focus = True
+
+    def on_click(self) -> None:
+        self.post_message(self.Selected(self.channel_num))
 
     def render(self) -> str:
         """Return Rich markup for the strip (number, name, inserts, protocol/mode)."""
@@ -77,6 +90,12 @@ class ChannelStrip(Static):
             self.add_class("highlighted")
         else:
             self.remove_class("highlighted")
+
+    def watch_selected(self, value: bool) -> None:
+        if value:
+            self.add_class("selected")
+        else:
+            self.remove_class("selected")
 
     # --- Flash helper ---
 

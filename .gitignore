@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.venv/
+dist/
+build/
+*.egg
+.mypy_cache/
+
+# IDE / editor
+.cursor/
+.vscode/
+
+# Internal tooling
+.juno_task/
+.playwright-mcp/
+.planning/
+
+# Reverse-engineering artifacts (decompiled Java, pcaps)
+reverse-engineering/
+
+# Dev/debug scripts
+probe_console.py
+audit_runner.py

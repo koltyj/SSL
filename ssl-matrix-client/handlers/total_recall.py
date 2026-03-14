@@ -5,13 +5,14 @@ All payload formats from decompiled TRHandler.java.
 
 import logging
 
-from ..protocol import MessageCode, TxMessage
 from ..models import TRSnapshot
+from ..protocol import MessageCode, TxMessage
 
 log = logging.getLogger(__name__)
 
 
 # --- Builders (Remote -> Console) ---
+
 
 def build_set_tr_enable(desk_serial, my_serial, on):
     """Build SEND_SET_TR_ENABLE (cmd=300). Payload: boolean on."""
@@ -83,6 +84,7 @@ def build_swap_tr_chan_data(desk_serial, my_serial, src, dest):
 
 # --- Handlers (Console -> Remote) ---
 
+
 def handle_tr_enable_reply(rx, state):
     """Parse ACK_SET_TR_ENABLE (cmd=301) or ACK_GET_TR_STATE (cmd=303).
 
@@ -100,8 +102,10 @@ def handle_tr_list_reply(rx, state):
       [boolean isSelected — if console supports it]
     """
     state.tr_snapshots.clear()
+    state.selected_tr_index = -1
     _dir_path = rx.get_string()
-    while rx.remaining > 0:
+    snap_index = 0
+    while rx.remaining >= 2:
         file_index = rx.get_short()
         if file_index == 0:
             break
@@ -111,25 +115,22 @@ def handle_tr_list_reply(rx, state):
         time_str = rx.get_string()
         date_str = rx.get_string()
         size = rx.get_int()
-        # Check if there's a selected flag (Matrix console includes it)
-        is_selected = False
-        if rx.remaining > 0:
-            # Peek: if next value is a boolean-sized byte before next short,
-            # it's the selected flag
-            try:
-                is_selected = rx.get_boolean()
-                if is_selected:
-                    state.selected_tr_index = file_index - 1
-            except Exception:
-                pass
+        # The Matrix console always sends the isSelected boolean per entry.
+        # Read it unconditionally — the protocol always includes it.
+        is_selected = rx.get_boolean() if rx.remaining >= 1 else False
+        if is_selected:
+            state.selected_tr_index = snap_index
         # Strip .trs extension from name
         if name.endswith(".trs"):
             name = name[:-4]
-        state.tr_snapshots.append(TRSnapshot(
-            name=name,
-            info=info,
-            time_str=time_str,
-            date_str=date_str,
-            size=size,
-            is_selected=is_selected,
-        ))
+        state.tr_snapshots.append(
+            TRSnapshot(
+                name=name,
+                info=info,
+                time_str=time_str,
+                date_str=date_str,
+                size=size,
+                is_selected=is_selected,
+            )
+        )
+        snap_index += 1

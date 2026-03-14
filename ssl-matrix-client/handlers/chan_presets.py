@@ -5,13 +5,14 @@ All payload formats from decompiled ChanSettingsHandler.java (preset portion).
 
 import logging
 
-from ..protocol import MessageCode, TxMessage
 from ..models import ChanNamesPreset
+from ..protocol import MessageCode, TxMessage
 
 log = logging.getLogger(__name__)
 
 
 # --- Builders (Remote -> Console) ---
+
 
 def build_get_chan_names_preset_list(desk_serial, my_serial):
     """Build SEND_GET_CHAN_NAMES_PRESET_LIST (cmd=10790). No payload."""
@@ -49,6 +50,7 @@ def build_delete_chan_names_preset(desk_serial, my_serial, name):
 
 
 # --- Handlers (Console -> Remote) ---
+
 
 def handle_chan_names_preset_list_reply(rx, state):
     """Parse ACK_GET_CHAN_NAMES_PRESET_LIST (cmd=10791).

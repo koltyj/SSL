@@ -65,20 +65,19 @@ class TemplatesView(Static):
         self._refresh_list()
 
     def _refresh_list(self) -> None:
-        paths = tpl_module.list_templates()
+        templates = tpl_module.list_templates()
         lines = ["[bold]Saved Session Templates[/bold]", ""]
-        if not paths:
+        if not templates:
             lines.append(
                 "  [dim](no templates found — use 'template save <name>' in the REPL)[/dim]"
             )
         else:
-            for p in sorted(paths, key=lambda x: x.stat().st_mtime, reverse=True):
-                size_kb = p.stat().st_size / 1024
-                mtime = p.stat().st_mtime
-                import datetime
-
-                dt = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-                lines.append(f"  [green]{p.stem}[/green]   [dim]{dt}  {size_kb:.1f} KB[/dim]")
+            for filename, title, saved_at in templates:
+                display_title = title or "(untitled)"
+                display_date = saved_at[:16] if saved_at else "?"
+                lines.append(
+                    f"  [green]{filename}[/green]   [dim]{display_title}  {display_date}[/dim]"
+                )
         self.update("\n".join(lines))
 
 

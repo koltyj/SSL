@@ -107,10 +107,18 @@ class SSLStatusBar(Static):
         self.refresh()
 
 
+def _load_css() -> str:
+    """Load ssl_theme.tcss from alongside this module file."""
+    import pathlib
+
+    css_path = pathlib.Path(__file__).parent / "ssl_theme.tcss"
+    return css_path.read_text()
+
+
 class SSLApp(App):
     """SSL Matrix Console TUI application."""
 
-    CSS_PATH = "ssl_theme.tcss"
+    CSS = _load_css()
     TITLE = "SSL Matrix Console"
     COMMANDS: ClassVar[set] = App.COMMANDS | {ConsoleCmdProvider}
     BINDINGS: ClassVar[list] = [
@@ -149,6 +157,7 @@ class SSLApp(App):
         self.client = SSLMatrixClient(console_ip)
         self._last_template = ""
         self._disconnect_overlay: Optional[DisconnectOverlay] = None
+        self.selected_channel: Optional[int] = None
 
     def compose(self) -> ComposeResult:
         """Build the tabbed layout with status bar docked at bottom."""
@@ -178,11 +187,35 @@ class SSLApp(App):
         self.client._on_desk_offline = self._on_desk_offline_hook
         self.client._on_desk_online = self._on_desk_online_hook
 
-        self.client.connect()
-        self.run_worker(self._initial_sync, thread=True)
+        self.do_connect()
 
         # Set initial tab hints
         self.query_one(SSLStatusBar).set_hints_for_tab("channels")
+
+    def do_connect(self) -> None:
+        """Connect to console, wire hooks, and start initial sync."""
+        if self.client._running:
+            self.notify("Already connected", severity="warning")
+            return
+        self.client._on_state_changed = self._on_state_changed_hook
+        self.client._on_desk_offline = self._on_desk_offline_hook
+        self.client._on_desk_online = self._on_desk_online_hook
+        self.client.connect()
+        self.run_worker(self._initial_sync, thread=True)
+        self.notify("Connecting...")
+
+    def do_disconnect(self) -> None:
+        """Disconnect from console and update UI to reflect offline state."""
+        if not self.client._running:
+            self.notify("Not connected", severity="warning")
+            return
+        self.client.disconnect()
+        # Force status bar to red/disconnected since recv thread is gone
+        status_bar = self.query_one(SSLStatusBar)
+        status_bar._health = "red"
+        status_bar._project_info = "DISCONNECTED"
+        status_bar.refresh()
+        self.notify("Disconnected")
 
     def _initial_sync(self) -> None:
         """Wait for console to come online then request full state sync."""
@@ -193,54 +226,96 @@ class SSLApp(App):
 
     def _on_state_changed_hook(self) -> None:
         """Called from recv thread OUTSIDE the lock. Extract snapshot and post message."""
-        with self.client._lock:
-            snapshot = {
-                "online": self.client.state.desk.online,
-                "heartbeat_age": self.client.state.desk.heartbeat_age,
-                "project_name": self.client.state.project_name,
-                "title_name": self.client.state.title_name,
-                "channels": [(ch.number, ch.name) for ch in self.client.state.channels],
-                "daw_layers": [
-                    (dl.number, dl.protocol, dl.profile_name) for dl in self.client.state.daw_layers
-                ],
-                "automation_mode": self.client.state.automation_mode,
-                "synced": self.client.state.synced,
-                "channel_inserts": [
-                    (ci.channel, ci.chain_name, list(ci.inserts), ci.has_stereo)
-                    for ci in self.client.state.channel_inserts
-                ],
-                "last_template": self._last_template,
-                # Secondary view fields
-                "devices": [(d.number, d.name, d.is_assigned) for d in self.client.state.devices],
-                "console_name": self.client.state.desk.console_name,
-                "firmware": self.client.state.desk.firmware,
-                "motors_off": getattr(self.client.state, "motors_off", False),
-                "mdac_meters": getattr(self.client.state, "mdac_meters", False),
-                "split_config": self.client.get_split(),
-            }
-        self.post_message(self.StateUpdated(snapshot))
+        try:
+            with self.client._lock:
+                snapshot = {
+                    "online": self.client.state.desk.online,
+                    "heartbeat_age": self.client.state.desk.heartbeat_age,
+                    "project_name": getattr(self.client.state, "project_name", ""),
+                    "title_name": getattr(self.client.state, "title_name", ""),
+                    "channels": [(ch.number, ch.name) for ch in self.client.state.channels],
+                    "daw_layers": [
+                        (dl.number, dl.protocol, dl.profile_name)
+                        for dl in self.client.state.daw_layers
+                    ],
+                    "automation_mode": getattr(self.client.state, "automation_mode", 0),
+                    "synced": getattr(self.client.state, "synced", False),
+                    "channel_inserts": [
+                        (ci.channel, ci.chain_name, list(ci.inserts), ci.has_stereo)
+                        for ci in self.client.state.channel_inserts
+                    ],
+                    "last_template": self._last_template,
+                    "devices": [
+                        (d.number, d.name, d.is_assigned)
+                        for d in getattr(self.client.state, "devices", [])
+                    ],
+                    "console_name": self.client.state.desk.console_name,
+                    "firmware": self.client.state.desk.firmware,
+                    "motors_off": getattr(self.client.state, "motors_off", False),
+                    "mdac_meters": getattr(self.client.state, "mdac_meters", False),
+                    "split_config": self.client.get_split(),
+                }
+            self.post_message(self.StateUpdated(snapshot))
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("state_changed_hook error")
 
     def _on_desk_offline_hook(self, attempt: int) -> None:
         """Called from watchdog thread when console goes offline."""
-        self.post_message(self.ConsoleOffline(attempt))
+        try:
+            self.post_message(self.ConsoleOffline(attempt))
+        except Exception:
+            pass
 
     def _on_desk_online_hook(self) -> None:
         """Called from recv thread when console comes back online."""
-        self.post_message(self.ConsoleOnline())
+        try:
+            self.post_message(self.ConsoleOnline())
+        except Exception:
+            pass
 
     # --- Message handlers ---
 
-    def on_ssl_app_state_updated(self, msg: "SSLApp.StateUpdated") -> None:
+    def on_sslapp_state_updated(self, msg: "SSLApp.StateUpdated") -> None:
         """Handle StateUpdated: push snapshot into status bar, channel view, and secondary views."""
         self.query_one(SSLStatusBar).update_from(msg.snapshot)
         for channel_view in self.query(ChannelView):
             channel_view.update_from(msg.snapshot)
         for view_cls in (RoutingView, SettingsView):
-            view = self.query_one(view_cls, default=None)
-            if view is not None:
+            try:
+                view = self.query_one(view_cls)
                 view.update_from(msg.snapshot)
+            except Exception:
+                pass
 
-    def on_ssl_app_console_offline(self, msg: "SSLApp.ConsoleOffline") -> None:
+    def on_channel_strip_selected(self, msg: "ChannelStrip.Selected") -> None:  # noqa: F821
+        """Handle channel strip click — select/deselect."""
+        from .tui_widgets import ChannelStrip
+
+        # Deselect previous
+        if self.selected_channel is not None:
+            try:
+                old = self.query_one(f"#ch-{self.selected_channel}", ChannelStrip)
+                old.selected = False
+            except Exception:
+                pass
+
+        # Toggle if clicking same channel
+        if self.selected_channel == msg.channel_num:
+            self.selected_channel = None
+            return
+
+        # Select new
+        self.selected_channel = msg.channel_num
+        try:
+            new = self.query_one(f"#ch-{msg.channel_num}", ChannelStrip)
+            new.selected = True
+        except Exception:
+            pass
+        self.notify(f"Channel {msg.channel_num} selected", severity="information")
+
+    def on_sslapp_console_offline(self, msg: "SSLApp.ConsoleOffline") -> None:
         """Handle ConsoleOffline: push disconnect overlay or update attempt count."""
         if self._disconnect_overlay is not None:
             self._disconnect_overlay.update_attempt(msg.attempt)
@@ -249,7 +324,7 @@ class SSLApp(App):
             self._disconnect_overlay = overlay
             self.push_screen(overlay)
 
-    def on_ssl_app_console_online(self, _msg: "SSLApp.ConsoleOnline") -> None:
+    def on_sslapp_console_online(self, _msg: "SSLApp.ConsoleOnline") -> None:
         """Handle ConsoleOnline: dismiss disconnect overlay if showing."""
         if self._disconnect_overlay is not None:
             self.pop_screen()

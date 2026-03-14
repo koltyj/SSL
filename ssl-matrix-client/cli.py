@@ -47,6 +47,20 @@ class SSLMatrixCLI(cmd.Cmd):
             return False
         return True
 
+    # --- TUI ---
+
+    def do_tui(self, arg):
+        """Switch to the Terminal UI. Usage: tui"""
+        print("Launching TUI... (disconnect first)")
+        if self._connected:
+            self.client.disconnect()
+            self._connected = False
+        from .tui import SSLApp
+
+        app = SSLApp(console_ip=self.client.console_ip)
+        app.run()
+        return True  # Exit REPL after TUI closes
+
     # --- Connection ---
 
     def do_connect(self, arg):

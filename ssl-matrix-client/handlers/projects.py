@@ -6,13 +6,14 @@ All payload formats from decompiled ProjectsHandler.java.
 
 import logging
 
+from ..models import FileEntry
 from ..protocol import MessageCode, TxMessage
-from ..models import FileEntry, DiskInfo
 
 log = logging.getLogger(__name__)
 
 
 # --- Builders (Remote -> Console) ---
+
 
 def build_get_project_name_and_title(desk_serial, my_serial):
     """Build GET_PROJECT_NAME_AND_TITLE (cmd=10). No payload."""
@@ -51,16 +52,15 @@ def build_make_new_title(desk_serial, my_serial, project):
     return msg.to_bytes()
 
 
-def build_make_new_title_with_name(desk_serial, my_serial, proj, title,
-                                    ch_flag=0, ch_preset="",
-                                    mx_flag=0, mx_preset=""):
+def build_make_new_title_with_name(
+    desk_serial, my_serial, proj, title, ch_flag=0, ch_preset="", mx_flag=0, mx_preset=""
+):
     """Build SEND_MAKE_NEW_PROJECT_TITLE_WITH_NAME (cmd=212).
 
     Payload: string proj, string title, byte chFlag, string chPreset,
              byte mxFlag, string mxPreset
     """
-    msg = TxMessage(MessageCode.SEND_MAKE_NEW_PROJECT_TITLE_WITH_NAME,
-                    desk_serial, my_serial)
+    msg = TxMessage(MessageCode.SEND_MAKE_NEW_PROJECT_TITLE_WITH_NAME, desk_serial, my_serial)
     msg.write_string(proj)
     msg.write_string(title)
     msg.write_byte(ch_flag)
@@ -70,16 +70,15 @@ def build_make_new_title_with_name(desk_serial, my_serial, proj, title,
     return msg.to_bytes()
 
 
-def build_make_new_project_with_presets(desk_serial, my_serial, proj, title,
-                                        ch_flag=0, ch_preset="",
-                                        mx_flag=0, mx_preset=""):
+def build_make_new_project_with_presets(
+    desk_serial, my_serial, proj, title, ch_flag=0, ch_preset="", mx_flag=0, mx_preset=""
+):
     """Build SEND_MAKE_NEW_PROJECT_WITH_PRESET_OPTS (cmd=266).
 
     Payload: string proj, string title, byte chFlag, string chPreset,
              byte mxFlag, string mxPreset
     """
-    msg = TxMessage(MessageCode.SEND_MAKE_NEW_PROJECT_WITH_PRESET_OPTS,
-                    desk_serial, my_serial)
+    msg = TxMessage(MessageCode.SEND_MAKE_NEW_PROJECT_WITH_PRESET_OPTS, desk_serial, my_serial)
     msg.write_string(proj)
     msg.write_string(title)
     msg.write_byte(ch_flag)
@@ -122,6 +121,7 @@ def build_duplicate_title(desk_serial, my_serial, project, title):
 
 # --- Handlers (Console -> Remote) ---
 
+
 def handle_directory_list_reply(rx, state):
     """Parse GET_DIRECTORY_LIST_REPLY (cmd=61).
 
@@ -141,14 +141,16 @@ def handle_directory_list_reply(rx, state):
         time_str = rx.get_string()
         date_str = rx.get_string()
         size = rx.get_int()
-        state.directory.append(FileEntry(
-            name=name,
-            info=info,
-            is_dir=is_dir,
-            time_str=time_str,
-            date_str=date_str,
-            size=size,
-        ))
+        state.directory.append(
+            FileEntry(
+                name=name,
+                info=info,
+                is_dir=is_dir,
+                time_str=time_str,
+                date_str=date_str,
+                size=size,
+            )
+        )
 
 
 def handle_disk_info(rx, state):
@@ -173,5 +175,5 @@ def handle_projects_ack(rx, state):
     Used for cmds: 201, 211, 213, 221, 231, 241, 251, 265, 267
     """
     reply = rx.get_string()
-    if reply.upper() != "OK":
+    if reply.lower() != "ok":
         log.warning("Projects ACK error: %s (cmd=%d)", reply, rx.cmd_code)

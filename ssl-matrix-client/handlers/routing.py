@@ -6,13 +6,14 @@ All payload formats from decompiled MatrixHandler.java.
 
 import logging
 
+from ..models import Chain, ChannelInserts, MatrixPreset
 from ..protocol import MessageCode, TxMessage
-from ..models import InsertDevice, Chain, ChannelInserts, MatrixPreset
 
 log = logging.getLogger(__name__)
 
 
 # --- Builders (Remote -> Console) ---
+
 
 def build_get_insert_names_v2(desk_serial, my_serial, first=0, last=0):
     """Build SEND_GET_INSERT_INFO_V2 (cmd=10400). Payload: byte first, byte last."""
@@ -52,6 +53,8 @@ def build_set_insert_to_chan_v2(desk_serial, my_serial, chan, insert_num, slot):
 
     Payload: byte chan, byte insertNum, byte (slot-1), byte 0
     """
+    if slot < 1:
+        raise ValueError(f"slot must be >= 1, got {slot}")
     msg = TxMessage(MessageCode.SEND_SET_INSERT_TO_CHAN_V2, desk_serial, my_serial)
     msg.write_byte(chan)
     msg.write_byte(insert_num)
@@ -77,6 +80,8 @@ def build_deassign_chan(desk_serial, my_serial, chan):
 
 def build_delete_chan_insert(desk_serial, my_serial, chan, slot):
     """Build SEND_DELETE_CHAN_INSERT (cmd=10600). Payload: byte chan, byte (slot-1)."""
+    if slot < 1:
+        raise ValueError(f"slot must be >= 1, got {slot}")
     msg = TxMessage(MessageCode.SEND_DELETE_CHAN_INSERT, desk_serial, my_serial)
     msg.write_byte(chan)
     msg.write_byte(slot - 1)
@@ -120,6 +125,8 @@ def build_rename_chain(desk_serial, my_serial, old_name, new_name):
 
 def build_clear_inserts(desk_serial, my_serial, indices):
     """Build SEND_CLEAR_INSERTS (cmd=10680). Payload: byte count, then count bytes."""
+    if len(indices) > 255:
+        raise ValueError(f"Too many indices: {len(indices)} (max 255)")
     msg = TxMessage(MessageCode.SEND_CLEAR_INSERTS, desk_serial, my_serial)
     msg.write_byte(len(indices))
     for idx in indices:
@@ -164,6 +171,7 @@ def build_rename_matrix_preset(desk_serial, my_serial, old_name, new_name):
 
 # --- Handlers (Console -> Remote) ---
 
+
 def handle_insert_names_v2_reply(rx, state):
     """Parse ACK_GET_INSERT_INFO_V2 (cmd=10401).
 
@@ -202,12 +210,14 @@ def handle_chain_info_v2_reply(rx, state):
             elem_index = rx.get_unsigned_byte()
             elem_name = rx.get_string()
             elements.append((elem_index, elem_name))
-        state.chains.append(Chain(
-            number=chain_num,
-            name=name,
-            is_assigned=is_assigned,
-            elements=elements,
-        ))
+        state.chains.append(
+            Chain(
+                number=chain_num,
+                name=name,
+                is_assigned=is_assigned,
+                elements=elements,
+            )
+        )
 
 
 def handle_chan_matrix_info_v2_reply(rx, state):
@@ -228,12 +238,14 @@ def handle_chan_matrix_info_v2_reply(rx, state):
         for _ in range(num_elems):
             inserts.append(rx.get_unsigned_byte())
         has_stereo = rx.get_unsigned_byte()
-        state.channel_inserts.append(ChannelInserts(
-            channel=chan_num,
-            chain_name=chain_name,
-            inserts=inserts,
-            has_stereo=has_stereo,
-        ))
+        state.channel_inserts.append(
+            ChannelInserts(
+                channel=chan_num,
+                chain_name=chain_name,
+                inserts=inserts,
+                has_stereo=has_stereo,
+            )
+        )
 
 
 def handle_matrix_preset_list_reply(rx, state):
