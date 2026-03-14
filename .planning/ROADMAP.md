@@ -2,7 +2,7 @@
 
 ## Overview
 
-Five phases that move the SSL Matrix from disconnected hardware to the functional center of a hybrid mixing workflow. Phase 1 (complete) verified all compatibility on macOS Tahoe 26.2 — ipMIDI, HUI, MCU, and delta-ctrl all work natively with both Pro Tools and Ableton Live. The project has shifted from "build a DAW bridge" to "replace the broken MatrixRemote Java app and build a modern console control tool." Phase 2 audits every protocol capability against the live console. Phase 3 delivers console surface features (soft keys, V-pots, SuperCue). Phase 4 adds advanced workflow features (split board, session templates, monitoring). Phase 5 wraps everything in a native macOS dock application.
+Six phases that move the SSL Matrix from disconnected hardware to the functional center of a hybrid mixing workflow. Phase 1 (complete) verified all compatibility on macOS Tahoe 26.2 — ipMIDI, HUI, MCU, and delta-ctrl all work natively with both Pro Tools and Ableton Live. The project has shifted from "build a DAW bridge" to "replace the broken MatrixRemote Java app and build a modern console control tool." Phase 2 audits every protocol capability against the live console. Phase 3 delivers console surface features (soft keys, V-pots, SuperCue). Phase 4 adds advanced workflow features (split board, session templates, monitoring). Phase 5 adds a terminal UI for real-time console monitoring and control. Phase 6 wraps everything in a native macOS dock application.
 
 ## Phases
 
@@ -16,7 +16,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Capabilities Audit** - Wire-test every ssl-matrix-client protocol handler against the live console and document what's possible
 - [ ] **Phase 3: Console Surface Features** - Soft keys, V-pots, SuperCue integration via ssl-matrix-client
 - [ ] **Phase 4: Advanced Workflow Features** - Split board mode, session templates, project linking, connection monitoring
-- [ ] **Phase 5: Native macOS Dock App** - GUI application wrapping ssl-matrix-client (language TBD)
+- [ ] **Phase 5: Terminal UI** - Real-time console monitoring and control in the terminal
+- [ ] **Phase 6: Native macOS Dock App** - GUI application wrapping ssl-matrix-client (language TBD)
 
 ## Phase Details
 
@@ -71,28 +72,43 @@ Plans:
   2. Split board mode assigns left 8 faders to one DAW and right 8 to another, switchable with a single command
   3. Connection monitoring detects ipMIDI sync loss and auto-reconnects without user intervention
   4. All MatrixRemote functionality is replicated in ssl-matrix-client (channel names, routing, profiles, Total Recall, XPatch, projects)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 04-01-PLAN.md — Template core module: save/load/diff/apply logic with JSON serialization (SESS-01, SESS-02)
+- [ ] 04-02-PLAN.md — Connection watchdog with auto-reconnect + split board state tracking (BRDG-01, SPLIT-01)
+- [ ] 04-03-PLAN.md — Wire template/split/health commands into CLI REPL and argparse (all requirements)
 
-### Phase 5: Native macOS Dock App
-**Goal**: A native macOS application (dock app, not menu bar) wraps ssl-matrix-client with a visual interface for console control, status monitoring, and session management — replacing the broken MatrixRemote Java app with a modern, reliable GUI
+### Phase 5: Terminal UI
+**Goal**: A terminal-based UI for real-time console state monitoring and interactive control — bringing ssl-matrix-client from a command-driven REPL to a persistent, visual dashboard in the terminal
 **Depends on**: Phase 4
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  TBD (run /gsd:plan-phase 5 to define)
+**Plans**: TBD
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5 to break down)
+
+### Phase 6: Native macOS Dock App
+**Goal**: A native macOS application (dock app, not menu bar) wraps ssl-matrix-client with a visual interface for console control, status monitoring, and session management — replacing the broken MatrixRemote Java app with a modern, reliable GUI
+**Depends on**: Phase 5
 **Requirements**: APP-01, APP-02, APP-03
 **Success Criteria** (what must be TRUE):
   1. A native macOS dock application launches, connects to the console, and displays real-time console state
   2. All ssl-matrix-client CLI features are accessible through the GUI
   3. The app launches at login and persists across DAW restarts without manual intervention
-  4. Language/framework choice is informed by Phase 4 research (Swift, Python+native toolkit, or Electron TBD)
+  4. Language/framework choice is informed by Phase 5 research (Swift, Python+native toolkit, or Electron TBD)
 **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Compatibility Verification | 2/2 | Complete | 2026-03-11 |
 | 2. Capabilities Audit | 2/2 | Complete | 2026-03-13 |
-| 3. Console Surface Features | 1/2 | In Progress|  |
-| 4. Advanced Workflow Features | 0/TBD | Not started | - |
-| 5. Native macOS Dock App | 0/TBD | Not started | - |
+| 3. Console Surface Features | 2/2 | Complete | 2026-03-13 |
+| 4. Advanced Workflow Features | 0/3 | Not started | - |
+| 5. Terminal UI | 0/TBD | Not started | - |
+| 6. Native macOS Dock App | 0/TBD | Not started | - |
