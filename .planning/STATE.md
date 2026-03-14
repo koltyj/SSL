@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 05-terminal-ui-02-PLAN.md
-last_updated: "2026-03-14T14:19:10.164Z"
+stopped_at: Completed 05-terminal-ui-03-PLAN.md
+last_updated: "2026-03-14T14:19:58.447Z"
 last_activity: "2026-03-14 — Phase 4 Plan 1 complete: templates.py implemented with full TDD, 42 tests pass."
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 13
-  completed_plans: 9
+  completed_plans: 10
   percent: 50
 ---
 
@@ -59,6 +59,7 @@ Progress: [█████░░░░░] 50% (2 of 4 plans complete)
 | Phase 04-advanced-workflow-features P03 | 10min | 2 tasks | 2 files |
 | Phase 05-terminal-ui P01 | 15 | 2 tasks | 9 files |
 | Phase 05-terminal-ui P02 | 3 | 2 tasks | 4 files |
+| Phase 05-terminal-ui P03 | 12min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Recent decisions affecting current work:
 - [Phase 05-terminal-ui]: BINDINGS annotated with ClassVar to satisfy RUF012 lint rule in Textual subclasses
 - [Phase 05-terminal-ui]: query() iterator used in on_ssl_app_state_updated instead of query_one() to tolerate unmounted ChannelView
 - [Phase 05-terminal-ui]: First DAW layer used for all 16 channel protocol display — per-layer breakdown deferred to Settings tab
+- [Phase 05-terminal-ui]: ConsoleCmdProvider palette callbacks use run_worker(thread=True) for UDP calls to avoid blocking Textual async loop
+- [Phase 05-terminal-ui]: SettingsView reads split_config from snapshot (get_split() in hook), never _split_config directly — public API boundary enforced
+- [Phase 05-terminal-ui]: TemplatesView refreshes on mount only (not on StateUpdated) — template files do not change during a TUI session
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-14T14:19:10.162Z
-Stopped at: Completed 05-terminal-ui-02-PLAN.md
+Last session: 2026-03-14T14:19:58.445Z
+Stopped at: Completed 05-terminal-ui-03-PLAN.md
 Resume file: None
