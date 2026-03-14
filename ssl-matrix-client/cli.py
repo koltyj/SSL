@@ -16,8 +16,18 @@ import logging
 import sys
 import time
 
-from .client import SSLMatrixClient
+from .client import HEARTBEAT_TIMEOUT, SSLMatrixClient
 from .protocol import PORT, PROTOCOL_NAMES
+from .templates import (
+    TEMPLATE_DIR,
+    build_apply_commands,
+    delete_template,
+    diff_template,
+    list_templates,
+    load_template,
+    save_template,
+    show_template,
+)
 
 
 class SSLMatrixCLI(cmd.Cmd):
@@ -1064,6 +1074,401 @@ class SSLMatrixCLI(cmd.Cmd):
             "It is NOT accessible via the UDP protocol.\n"
             "Use the console surface buttons directly for SuperCue/Auto-Mon control."
         )
+
+    # --- Templates ---
+
+    def do_template(self, arg):
+        """Template CRUD. Usage: template save|list|show|delete|load [args]
+
+        template save [daw_path]           Save current console state as a template.
+        template list                      List all saved templates.
+        template show <filename>           Inspect a template's contents.
+        template delete <filename>         Delete a template.
+        template load <filename> [cats]    Load template with diff preview.
+                                           cats: all|channels|profiles|routing|display (comma-separated)
+        """
+        parts = arg.split(None, 1)
+        if not parts:
+            print("Usage: template save|list|show|delete|load [args]")
+            print("       template list                      -- list all templates")
+            print("       template save [daw_path]           -- save current state")
+            print("       template show <filename>           -- inspect template")
+            print("       template delete <filename>         -- delete template")
+            print("       template load <filename> [cats]    -- load with diff preview")
+            return
+
+        sub = parts[0].lower()
+        rest = parts[1] if len(parts) > 1 else ""
+
+        if sub == "list":
+            self._template_list()
+        elif sub == "save":
+            if not self._require_connected():
+                return
+            self._template_save(rest.strip() or None)
+        elif sub == "show":
+            filename = rest.strip()
+            if not filename:
+                print("Usage: template show <filename>")
+                return
+            self._template_show(filename)
+        elif sub == "delete":
+            filename = rest.strip()
+            if not filename:
+                print("Usage: template delete <filename>")
+                return
+            self._template_delete(filename)
+        elif sub == "load":
+            if not self._require_connected():
+                return
+            args_parts = rest.split(None, 1)
+            if not args_parts:
+                print("Usage: template load <filename> [categories]")
+                return
+            filename = args_parts[0]
+            cats_str = args_parts[1] if len(args_parts) > 1 else "all"
+            self._template_load(filename, cats_str)
+        else:
+            print(f"Unknown template subcommand: '{sub}'")
+            print("Valid: save, list, show, delete, load")
+
+    def _template_list(self):
+        """Print a table of all saved templates."""
+        entries = list_templates()
+        if not entries:
+            print(f"No templates found in {TEMPLATE_DIR}")
+            return
+        print(f"{'Filename':40s} {'Title':24s} {'Saved At'}")
+        print("-" * 80)
+        for filename, title, saved_at in entries:
+            print(f"{filename:40s} {(title or ''):24s} {saved_at}")
+
+    def _template_save(self, daw_project_path=None):
+        """Capture console state and write a template file."""
+        with self.client._lock:
+            state_copy = self.client.state
+            path = save_template(state_copy, daw_project_path=daw_project_path)
+        print(f"Template saved: {path.name}")
+        print(f"  Path: {path}")
+
+    def _template_show(self, filename):
+        """Pretty-print a template's contents."""
+        path = TEMPLATE_DIR / filename
+        if not path.exists():
+            print(f"Template not found: {filename}")
+            print(f"  (looked in {TEMPLATE_DIR})")
+            return
+        try:
+            data = show_template(path)
+        except Exception as e:
+            print(f"Error reading template: {e}")
+            return
+
+        print(f"Template: {filename}")
+        print(f"  Version:    {data.get('version', '?')}")
+        print(f"  Saved:      {data.get('saved_at', '?')}")
+        print(f"  Project:    {data.get('console_project_title', '(none)')}")
+        daw = data.get("daw_project_path")
+        if daw:
+            print(f"  DAW path:   {daw}")
+        state = data.get("state", {})
+
+        # Channels
+        channels = [ch for ch in state.get("channels", []) if ch.get("name")]
+        if channels:
+            print(f"\n  Channels ({len(channels)} named):")
+            for ch in channels:
+                print(f"    Ch{ch.get('number', '?'):3}: {ch.get('name', '')}")
+
+        # DAW layers
+        layers = state.get("daw_layers", [])
+        if layers:
+            print("\n  DAW Layers:")
+            for layer in layers:
+                proto = PROTOCOL_NAMES.get(layer.get("protocol", 0), "?")
+                print(
+                    f"    Layer {layer.get('number', '?')}: {proto} / {layer.get('profile_name', '')}"
+                )
+
+        # Routing summary
+        devices = [d for d in state.get("devices", []) if d.get("name")]
+        if devices:
+            print(f"\n  Insert Devices ({len(devices)} named):")
+            for d in devices:
+                print(f"    Dev{d.get('number', '?'):2}: {d.get('name', '')}")
+
+        # Display settings
+        auto_mode = state.get("automation_mode")
+        tr_enabled = state.get("tr_enabled")
+        display_17_32 = state.get("display_17_32")
+        flip_scrib = state.get("flip_scrib")
+        print("\n  Display settings:")
+        if auto_mode is not None:
+            print(f"    automation_mode: {'Delta' if auto_mode else 'Legacy'}")
+        if tr_enabled is not None:
+            print(f"    tr_enabled:      {tr_enabled}")
+        if display_17_32 is not None:
+            print(f"    display_17_32:   {display_17_32}")
+        if flip_scrib is not None:
+            print(f"    flip_scrib:      {flip_scrib}")
+
+        xpatch = state.get("xpatch")
+        if xpatch:
+            print("\n  XPatch: stored for reference (SET commands fail on this console)")
+
+    def _template_delete(self, filename):
+        """Delete a template, prompting for confirmation in REPL mode."""
+        path = TEMPLATE_DIR / filename
+        if not path.exists():
+            print(f"Template not found: {filename}")
+            return
+        confirm = input(f"Delete template '{filename}'? [y/N] ")
+        if confirm.lower() == "y":
+            try:
+                delete_template(path)
+                print(f"Deleted: {filename}")
+            except Exception as e:
+                print(f"Error deleting template: {e}")
+        else:
+            print("Cancelled.")
+
+    def _template_load(self, filename, cats_str="all"):
+        """Load template with diff preview and selective apply."""
+        path = TEMPLATE_DIR / filename
+        if not path.exists():
+            print(f"Template not found: {filename}")
+            print(f"  (looked in {TEMPLATE_DIR})")
+            print("  Use 'template list' to see available templates.")
+            return
+
+        try:
+            tmpl_data = load_template(path)
+        except Exception as e:
+            print(f"Error reading template: {e}")
+            return
+
+        # Acquire lock briefly to read state for diff
+        with self.client._lock:
+            state_snap = self.client.state
+            diff = diff_template(tmpl_data, state_snap)
+            desk_serial = self.client.state.desk.serial
+            my_serial = self.client.my_serial
+
+        # Display diff grouped by category
+        total_changes = sum(len(v) for k, v in diff.items() if k != "skipped")
+        print(f"Template: {filename}")
+        print(f"Saved:    {tmpl_data.get('saved_at', '?')}")
+        print()
+
+        categories = ["channels", "profiles", "routing", "display"]
+        for cat in categories:
+            items = diff.get(cat, [])
+            if items:
+                print(f"  {cat.upper()} changes ({len(items)}):")
+                for item in items:
+                    print(f"    {item}")
+            else:
+                print(f"  {cat.upper()}: no changes")
+
+        if diff.get("skipped"):
+            print("\n  SKIPPED:")
+            for item in diff["skipped"]:
+                print(f"    {item}")
+
+        if total_changes == 0:
+            print("\nNo restorable differences found. Nothing to apply.")
+            return
+
+        print()
+
+        # Parse categories from cats_str
+        valid_cats = {"all", "channels", "profiles", "routing", "display", "none"}
+        if cats_str.strip().lower() == "all":
+            apply_cats = {"all"}
+            prompt_answer = "all"
+        else:
+            parsed = {c.strip().lower() for c in cats_str.split(",") if c.strip()}
+            if parsed - valid_cats:
+                invalid = parsed - valid_cats
+                print(f"Unknown categories: {invalid}")
+                print(f"Valid: {', '.join(sorted(valid_cats))}")
+                return
+            if "none" in parsed:
+                print("Nothing applied.")
+                return
+            apply_cats = parsed
+            prompt_answer = cats_str
+
+        # Prompt in interactive REPL mode
+        confirm = (
+            input(
+                f"Apply [{prompt_answer}]? (categories: all/channels/profiles/routing/display/none) [all] "
+            )
+            .strip()
+            .lower()
+            or prompt_answer
+        )
+
+        if confirm in ("none", "n", "no"):
+            print("Nothing applied.")
+            return
+
+        # Re-parse from prompt response
+        if confirm in ("all", ""):
+            apply_cats = {"all"}
+        elif confirm in valid_cats:
+            apply_cats = {confirm}
+        else:
+            parsed = {c.strip().lower() for c in confirm.split(",") if c.strip()}
+            if "none" in parsed:
+                print("Nothing applied.")
+                return
+            apply_cats = parsed
+
+        # Build and send commands
+        with self.client._lock:
+            state_final = self.client.state
+            commands = build_apply_commands(
+                tmpl_data, state_final, apply_cats, desk_serial, my_serial
+            )
+
+        if not commands:
+            print("No commands to send for selected categories.")
+            return
+
+        print(f"\nApplying {len(commands)} command(s)...")
+        applied = 0
+        for pkt, desc in commands:
+            self.client.send_raw(pkt)
+            print(f"  {desc}")
+            applied += 1
+            time.sleep(0.05)
+
+        print(f"\nDone. Applied: {applied}, Skipped: {total_changes - applied}")
+
+    # --- Split Board ---
+
+    def do_split(self, arg):
+        """Split board configuration (software bookkeeping only — no UDP commands).
+
+        split <left_protocol> <right_protocol>   Configure split (e.g. split HUI MCU).
+        split status                             Show current split config.
+        split clear                              Clear split config.
+
+        Note: Fader group assignment is set via hardware buttons on the console
+        surface. This command tracks your intended assignment in software.
+        """
+        parts = arg.split()
+        if not parts:
+            print("Usage: split <left_protocol> <right_protocol>")
+            print("       split status")
+            print("       split clear")
+            return
+
+        sub = parts[0].lower()
+
+        if sub == "status":
+            config = self.client.get_split()
+            if config is None:
+                print("No split configured.")
+            else:
+                print("Split board configuration:")
+                print(f"  Left fader group:  layers {config['left']}")
+                print(f"  Right fader group: layers {config['right']}")
+        elif sub == "clear":
+            self.client.clear_split()
+            print("Split configuration cleared.")
+        else:
+            # parse as <left_protocol> <right_protocol>
+            if len(parts) < 2:
+                print("Usage: split <left_protocol> <right_protocol>")
+                print("Example: split HUI MCU")
+                return
+
+            left_proto_name = parts[0].upper()
+            right_proto_name = parts[1].upper()
+
+            # Map protocol names to DAW layer numbers
+            with self.client._lock:
+                layers = list(self.client.state.daw_layers)
+
+            left_layers = []
+            right_layers = []
+
+            for dl in layers:
+                proto_name = PROTOCOL_NAMES.get(dl.protocol, "").upper()
+                if proto_name == left_proto_name:
+                    left_layers.append(dl.number)
+                elif proto_name == right_proto_name:
+                    right_layers.append(dl.number)
+
+            if not left_layers:
+                print(f"No DAW layers found with protocol '{left_proto_name}'.")
+                print("Use 'layers' to see current DAW layer assignments.")
+                return
+            if not right_layers:
+                print(f"No DAW layers found with protocol '{right_proto_name}'.")
+                print("Use 'layers' to see current DAW layer assignments.")
+                return
+
+            try:
+                config = self.client.set_split(left_layers, right_layers)
+            except ValueError as e:
+                print(f"Error: {e}")
+                return
+
+            print("Split board configured (software bookkeeping only):")
+            print(f"  Left fader group ({left_proto_name}):  layers {config['left']}")
+            print(f"  Right fader group ({right_proto_name}): layers {config['right']}")
+            print()
+            for layer_num in config["left"]:
+                print(f"  Left 8 faders:  Press DAW Layer {layer_num} button on console")
+            for layer_num in config["right"]:
+                print(f"  Right 8 faders: Press DAW Layer {layer_num} button on console")
+            print()
+            print(
+                "Note: All 4 DAW layers are active simultaneously at the protocol level.\n"
+                "      The physical fader group assignment is done via hardware surface buttons."
+            )
+
+    # --- Health ---
+
+    def do_health(self, arg):
+        """Show connection health status and watchdog state."""
+        if not self._require_connected():
+            return
+        with self.client._lock:
+            online = self.client.state.desk.online
+            hb_age = self.client.state.desk.heartbeat_age
+            reconnecting = self.client._reconnecting
+            reconnect_attempts = self.client._reconnect_attempts
+
+        status = "Online" if online else "Offline"
+        if reconnecting:
+            status = f"Offline (reconnecting, attempt {reconnect_attempts})"
+
+        if hb_age == float("inf"):
+            hb_str = "never received"
+            hb_health = "(unknown)"
+        else:
+            hb_str = f"{hb_age:.1f}s ago"
+            if hb_age < HEARTBEAT_TIMEOUT * 0.75:
+                hb_health = "(healthy)"
+            elif hb_age < HEARTBEAT_TIMEOUT:
+                hb_health = "(warning)"
+            else:
+                hb_health = "(stale)"
+
+        watchdog = "Active" if self.client._running else "Stopped"
+
+        print(f"Connection:  {status}")
+        print(f"Heartbeat:   {hb_str} {hb_health}")
+        print(f"Watchdog:    {watchdog}")
+        print(f"Reconnects:  {reconnect_attempts}")
+        if reconnecting:
+            from .client import MAX_RECONNECT_ATTEMPTS
+
+            print(f"  (max: {MAX_RECONNECT_ATTEMPTS} attempts before giving up)")
 
     # --- Debug ---
 
