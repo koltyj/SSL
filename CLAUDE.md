@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Python UDP client for controlling an SSL Matrix mixing console over Ethernet. Reverse-engineered from the decompiled Java MatrixRemote application. No external dependencies — pure stdlib Python.
+A Python UDP client for controlling SSL mixing consoles (Matrix, Duality, AWS 900, AWS 924/948) over Ethernet. Reverse-engineered from the SSL MatrixRemote protocol and live packet captures. Runtime dependency: Textual (TUI).
 
 ## Running
 
@@ -25,9 +25,14 @@ No build step. Dev dependencies: `pip install pytest ruff pre-commit`.
 
 ```
 cli.py (cmd.Cmd REPL + argparse one-shot)
+  ├── tui.py (Textual TUI application)
+  │     ├── tui_widgets.py (ChannelStrip, ChannelView, DisconnectOverlay)
+  │     ├── tui_views.py (RoutingView, TemplatesView, SettingsView)
+  │     └── tui_commands.py (command palette provider)
   └── client.py (SSLMatrixClient)
         ├── protocol.py (TxMessage/RxMessage wire format, 197 MessageCodes)
-        ├── models.py (ConsoleState dataclass tree)
+        ├── models.py (ConsoleProfile, ConsoleState dataclass tree)
+        ├── templates.py (session template save/load/diff/apply)
         └── handlers/ (10 handler modules, ~105 dispatch entries)
               ├── connection.py   — GET_DESK discovery, heartbeat
               ├── channels.py     — Channel names, scribble strips
@@ -43,21 +48,28 @@ cli.py (cmd.Cmd REPL + argparse one-shot)
 
 Each handler module has **builders** (Python → console) and **handlers** (console → Python). The client's `_build_dispatch_table()` maps `MessageCode` → handler function.
 
+## Multi-Console Support
+
+The client auto-detects the console model from `GET_DESK_REPLY` and reconfigures state dimensions and feature availability via `ConsoleProfile`. Features like insert matrix, XPatch, DAW layers, and delta automation are gated per-profile — only Matrix has all features. Duality and AWS boards get channels, projects, Total Recall, and channel name presets.
+
 ## Critical Design Constraints
 
 1. **Port 50081 is sacred.** The console only responds to packets arriving on this port. The shared socket must bind to it. Exception: the `restart_console()` method uses an ephemeral socket — the board firmware freezes if restart arrives from port 50081.
 
 2. **Thread safety via `_lock`.** The recv thread runs in a daemon thread and calls handlers that mutate `ConsoleState`. All state reads from the CLI thread must hold `self.client._lock`. All handler writes already run under the lock (dispatched inside `with self._lock:` in `_recv_loop`).
 
-3. **Wire format matches Java exactly.** The 16-byte header is `[cmdCode:int, destCode:int, deskSerial:int, remoteSerial:int]`, big-endian. Payload serialization uses `TxMessage.write_*` / `RxMessage.get_*`. When in doubt, check the decompiled Java in `reverse-engineering/decompiled/`.
+3. **Wire format is shared across all SSL consoles.** The 16-byte header is `[cmdCode:int, destCode:int, deskSerial:int, remoteSerial:int]`, big-endian. Payload serialization uses `TxMessage.write_*` / `RxMessage.get_*`.
 
 4. **Protocol bounds checking.** `RxMessage.get_*` methods raise `BufferError` on truncated packets. `TxMessage.write_*` methods raise `ValueError` on buffer overflow. Handlers must tolerate `BufferError` — the recv loop catches it.
 
-## Console Specs
+## Supported Consoles
 
-- SSL Matrix, 16 channels (names 1-32 in firmware), firmware V3.0/5
-- 4 DAW layers, 16 insert devices, 16 XPatch channels
-- Heartbeat every ~10s; GET_DESK discovery on timeout
+| Console | Channels | Insert Matrix | XPatch | DAW Layers | Delta |
+|---------|----------|---------------|--------|------------|-------|
+| Matrix | 32 | Yes | Yes (16ch) | Yes (4) | Yes |
+| Duality | 96 | No | No | No | No |
+| AWS 900 | 48 | No | No | No | No |
+| AWS 924/948 | 48 | No | No | No | No |
 
 ## Development
 
@@ -77,4 +89,4 @@ Tool config (ruff, pytest) lives in `pyproject.toml`.
 
 ## Protocol Reference
 
-The wire format was reverse-engineered from SSL's Java MatrixRemote application. The 16-byte header and payload serialization are documented in `protocol.py`.
+The wire format was reverse-engineered from SSL's MatrixRemote protocol. The 16-byte header and payload serialization are documented in `protocol.py`.

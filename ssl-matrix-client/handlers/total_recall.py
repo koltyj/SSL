@@ -1,6 +1,6 @@
 """Total Recall handler: TR snapshot management, enable/state, channel data.
 
-All payload formats from decompiled TRHandler.java.
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging

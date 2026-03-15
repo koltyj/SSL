@@ -1,6 +1,6 @@
 """Softkeys handler: keymap editing, MIDI/USB key assignment, profile settings.
 
-All payload formats from decompiled SoftKeysHandler.java.
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging

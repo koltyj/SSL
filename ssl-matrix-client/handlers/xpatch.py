@@ -1,7 +1,6 @@
 """XPatch handler: crosspoint audio routing — presets, chains, routing, setup.
 
-Combines XpatchPresetsHandler, XpatchChainsHandler, XpatchRoutingHandler,
-and XpatchSetupHandler from the decompiled Java sources.
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging
@@ -399,7 +398,6 @@ def handle_chains_list_reply(rx, state):
         used = rx.get_boolean()
         name = rx.get_string()
         # Read exactly NUM_CHAIN_ELEMENTS link ints per chain.
-        # Must match Java's getNumChainElements() — always 8 for Matrix XPatch.
         links = []
         for _ in range(NUM_CHAIN_ELEMENTS):
             if rx.remaining < 4:

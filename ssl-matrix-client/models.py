@@ -1,7 +1,92 @@
-"""Data models for SSL Matrix console state."""
+"""Data models for SSL console state."""
 
+import logging
 import time
 from dataclasses import dataclass, field
+
+log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ConsoleProfile:
+    """Feature profile for a specific SSL console model."""
+
+    product_key: str
+    display_name: str
+    num_channels: int
+    has_insert_matrix: bool = False
+    has_xpatch: bool = False
+    num_xpatch_channels: int = 0
+    has_daw_layers: bool = False
+    num_daw_layers: int = 0
+    has_delta: bool = False
+    has_softkeys: bool = False
+    master_fader_offset: int = 0
+    alt_names: tuple = ()
+
+
+CONSOLE_PROFILES: dict[str, ConsoleProfile] = {
+    "Matrix": ConsoleProfile(
+        product_key="Matrix",
+        display_name="SSL Matrix",
+        num_channels=32,
+        has_insert_matrix=True,
+        has_xpatch=True,
+        num_xpatch_channels=16,
+        has_daw_layers=True,
+        num_daw_layers=4,
+        has_delta=True,
+        has_softkeys=True,
+    ),
+    "Duality": ConsoleProfile(
+        product_key="Duality",
+        display_name="SSL Duality",
+        num_channels=96,
+    ),
+    "AWS900": ConsoleProfile(
+        product_key="AWS900",
+        display_name="SSL AWS 900",
+        num_channels=48,
+        master_fader_offset=2,
+        alt_names=("AWS900+",),
+    ),
+    "AWS924-948": ConsoleProfile(
+        product_key="AWS924-948",
+        display_name="SSL AWS 924/948",
+        num_channels=48,
+        master_fader_offset=2,
+    ),
+}
+
+DEFAULT_PROFILE = CONSOLE_PROFILES["Matrix"]
+
+
+def lookup_profile(product_name: str) -> ConsoleProfile:
+    """Find a ConsoleProfile matching the product_name reported by firmware.
+
+    Tries exact match, then alt_names, then case-insensitive substring.
+    Falls back to Matrix profile with a warning.
+    """
+    if not product_name:
+        return DEFAULT_PROFILE
+
+    # Exact match
+    if product_name in CONSOLE_PROFILES:
+        return CONSOLE_PROFILES[product_name]
+
+    # Alt names
+    for profile in CONSOLE_PROFILES.values():
+        if product_name in profile.alt_names:
+            return profile
+
+    # Case-insensitive substring
+    lower = product_name.lower()
+    for key, profile in CONSOLE_PROFILES.items():
+        if key.lower() in lower or lower in key.lower():
+            return profile
+
+    log.warning("Unknown console '%s', defaulting to Matrix profile", product_name)
+    return DEFAULT_PROFILE
 
 
 @dataclass
@@ -225,6 +310,7 @@ class SoftkeysState:
 class ConsoleState:
     """Full state of the connected console."""
 
+    profile: ConsoleProfile = field(default_factory=lambda: DEFAULT_PROFILE)
     desk: DeskInfo = field(default_factory=DeskInfo)
     channels: list = field(default_factory=lambda: [Channel(i) for i in range(1, 33)])
     profiles: list = field(default_factory=list)
@@ -256,6 +342,40 @@ class ConsoleState:
     display_17_32: int = 0
     flip_scrib: int = 0
 
+    def reconfigure(self, profile: ConsoleProfile) -> None:
+        """Rebuild dimension-dependent state for a new console profile.
+
+        Called after GET_DESK_REPLY identifies the console model.
+        Must be called under the client lock.
+        """
+        self.profile = profile
+        self.channels = [Channel(i) for i in range(1, profile.num_channels + 1)]
+
+        if profile.has_daw_layers:
+            self.daw_layers = [DawLayer(i) for i in range(1, profile.num_daw_layers + 1)]
+        else:
+            self.daw_layers = []
+
+        if profile.has_insert_matrix:
+            self.devices = [InsertDevice(i) for i in range(1, 17)]
+        else:
+            self.devices = []
+            self.chains = []
+            self.channel_inserts = []
+            self.matrix_presets = []
+
+        if profile.has_xpatch:
+            self.xpatch = XpatchState(
+                channels=[XpatchChannel(i) for i in range(1, profile.num_xpatch_channels + 1)]
+            )
+        else:
+            self.xpatch = XpatchState(channels=[])
+
+        if not profile.has_softkeys:
+            self.softkeys = SoftkeysState()
+
+        self.synced = False
+
     def get_channel(self, num):
         """Get channel by 1-based number."""
         if 1 <= num <= len(self.channels):
@@ -263,13 +383,13 @@ class ConsoleState:
         return None
 
     def get_daw_layer(self, num):
-        """Get DAW layer by 1-based number (1-4)."""
-        if 1 <= num <= 4:
+        """Get DAW layer by 1-based number."""
+        if 1 <= num <= len(self.daw_layers):
             return self.daw_layers[num - 1]
         return None
 
     def get_device(self, num):
-        """Get insert device by 1-based number (1-16)."""
-        if 1 <= num <= 16:
+        """Get insert device by 1-based number."""
+        if 1 <= num <= len(self.devices):
             return self.devices[num - 1]
         return None

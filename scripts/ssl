@@ -3,5 +3,5 @@
 # Usage: ssl          -> REPL
 #        ssl tui      -> Terminal UI
 #        ssl channels -> one-shot command
-cd /Users/koltonjacobs/DEV/SSL-BOARD || exit 1
-exec /usr/bin/python3 -m ssl-matrix-client "$@"
+cd "$(dirname "$0")/.." || exit 1
+exec python3 -m ssl-matrix-client "$@"

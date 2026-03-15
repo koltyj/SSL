@@ -1,7 +1,7 @@
 """Routing handler: insert matrix V2, chains, presets.
 
 Builders send commands to the console, handlers parse replies and update state.
-All payload formats from decompiled MatrixHandler.java.
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging

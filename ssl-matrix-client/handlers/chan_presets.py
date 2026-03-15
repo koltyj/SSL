@@ -1,6 +1,6 @@
 """Channel names preset handler: save/load/rename/delete named channel strip configs.
 
-All payload formats from decompiled ChanSettingsHandler.java (preset portion).
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging

@@ -146,14 +146,28 @@ class ChannelStrip(Static):
 
 
 class ChannelView(HorizontalScroll):
-    """Horizontal row of 16 ChannelStrip widgets mirroring the physical console."""
+    """Horizontal row of ChannelStrip widgets mirroring the physical console."""
+
+    def __init__(self, num_channels: int = 16, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._num_channels = num_channels
 
     def compose(self) -> ComposeResult:
-        for i in range(1, 17):
+        for i in range(1, self._num_channels + 1):
             yield ChannelStrip(i)
 
+    def set_channel_count(self, n: int) -> None:
+        """Rebuild strips if the channel count changed (e.g. after auto-detection)."""
+        current = len(list(self.query(ChannelStrip)))
+        if current == n:
+            return
+        self.remove_children()
+        for i in range(1, n + 1):
+            self.mount(ChannelStrip(i))
+        self._num_channels = n
+
     def update_from(self, snapshot: dict) -> None:
-        """Push snapshot data into each of the 16 channel strips.
+        """Push snapshot data into channel strips.
 
         Args:
             snapshot: dict with keys channels, daw_layers, automation_mode,

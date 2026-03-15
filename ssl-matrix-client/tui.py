@@ -249,6 +249,7 @@ class SSLApp(App):
                         (d.number, d.name, d.is_assigned)
                         for d in getattr(self.client.state, "devices", [])
                     ],
+                    "num_channels": len(self.client.state.channels),
                     "console_name": self.client.state.desk.console_name,
                     "firmware": self.client.state.desk.firmware,
                     "motors_off": getattr(self.client.state, "motors_off", False),
@@ -281,6 +282,9 @@ class SSLApp(App):
         """Handle StateUpdated: push snapshot into status bar, channel view, and secondary views."""
         self.query_one(SSLStatusBar).update_from(msg.snapshot)
         for channel_view in self.query(ChannelView):
+            num_ch = msg.snapshot.get("num_channels", 0)
+            if num_ch:
+                channel_view.set_channel_count(num_ch)
             channel_view.update_from(msg.snapshot)
         for view_cls in (RoutingView, SettingsView):
             try:

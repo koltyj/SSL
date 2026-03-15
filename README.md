@@ -1,6 +1,6 @@
-# SSL Matrix Control
+# SSL Console Control
 
-**A reverse-engineered Python client for controlling SSL Matrix mixing consoles over Ethernet.**
+**A reverse-engineered Python client for controlling SSL mixing consoles over Ethernet.**
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
@@ -10,9 +10,9 @@
 
 ## What is this
 
-The SSL Matrix is a 16-channel analog mixing console with digital control capabilities -- flying faders, DAW integration, insert routing, and session recall. SSL's official control software (MatrixRemote) is a Java application that hasn't been maintained for modern macOS.
+SSL's large-format analog consoles (Matrix, Duality, AWS 900, AWS 924/948) have digital control capabilities -- flying faders, DAW integration, insert routing, and session recall. SSL's official control software (MatrixRemote) is a Java application that hasn't been maintained for modern macOS.
 
-This project is a from-scratch Python replacement, reverse-engineered from the decompiled MatrixRemote source and live packet captures. It speaks the console's native UDP protocol and exposes every documented control surface feature through a terminal UI, interactive REPL, and scriptable CLI.
+This project is a from-scratch Python replacement, reverse-engineered from the SSL MatrixRemote protocol and live packet captures. It speaks the console's native UDP protocol and auto-detects which console model is connected, exposing available features through a terminal UI, interactive REPL, and scriptable CLI.
 
 ## Features
 
@@ -169,21 +169,22 @@ cli.py (cmd.Cmd REPL + argparse one-shot)
               └── softkeys.py     — Programmable keys, keymap editor
 ```
 
-Each handler module contains **builders** (Python to console) and **handlers** (console to Python). The client's dispatch table maps `MessageCode` enums to handler functions. The wire format uses a 16-byte big-endian header followed by a variable-length payload -- all reverse-engineered from the original Java application.
+Each handler module contains **builders** (Python to console) and **handlers** (console to Python). The client's dispatch table maps `MessageCode` enums to handler functions. The wire format uses a 16-byte big-endian header followed by a variable-length payload — shared across all SSL console models and reverse-engineered from the SSL MatrixRemote protocol.
 
-## Console Specs
+## Supported Consoles
 
-| Spec | Value |
-|------|-------|
-| Console | SSL Matrix |
-| Channels | 16 (firmware addresses 1-32) |
-| DAW Layers | 4 (HUI, MCU, CC protocols) |
-| Insert Devices | 16 |
-| XPatch Channels | 16 |
-| Connection | UDP over Ethernet, port 50081 |
-| Heartbeat | ~10 second interval |
+The client auto-detects the console model on connection and enables the appropriate feature set.
 
-Tested with firmware V3.0/5. Other firmware versions may work but are untested.
+| Console | Channels | Insert Matrix | XPatch | DAW Layers | Delta |
+|---------|----------|---------------|--------|------------|-------|
+| SSL Matrix | 32 | Yes | Yes (16ch) | Yes (4) | Yes |
+| SSL Duality | 96 | -- | -- | -- | -- |
+| SSL AWS 900 | 48 | -- | -- | -- | -- |
+| SSL AWS 924/948 | 48 | -- | -- | -- | -- |
+
+All consoles share: channel names, projects, Total Recall, channel name presets, UDP on port 50081.
+
+Matrix tested with firmware V3.0/5. Other consoles and firmware versions may work but are untested — reports welcome.
 
 ## Development
 

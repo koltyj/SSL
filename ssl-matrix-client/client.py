@@ -1,4 +1,4 @@
-"""Core SSL Matrix client: single socket on port 50081, threaded recv loop, dispatch table."""
+"""Core SSL console client: single socket on port 50081, threaded recv loop, dispatch table."""
 
 import logging
 import random
@@ -18,7 +18,7 @@ from .handlers import (
     total_recall,
     xpatch,
 )
-from .models import ConsoleState
+from .models import ConsoleState, lookup_profile
 from .protocol import (
     BUFFER_SIZE,
     PORT,
@@ -240,8 +240,16 @@ class SSLMatrixClient:
                         except Exception as e:
                             log.warning("Handler error for cmd %d: %s", rx.cmd_code, e)
                     # Post-dispatch hook: after GET_DESK_REPLY sets desk online,
-                    # check whether we were in a reconnect attempt and schedule re-sync.
+                    # auto-detect console profile then handle reconnect.
                     if rx.cmd_code == MessageCode.GET_DESK_REPLY:
+                        with self._lock:
+                            profile = lookup_profile(self.state.desk.product_name)
+                            if self.state.profile != profile:
+                                log.info(
+                                    "Detected %s, reconfiguring state",
+                                    profile.display_name,
+                                )
+                                self.state.reconfigure(profile)
                         self._on_desk_came_online()
                     # Fire state-changed hook OUTSIDE the lock so post_message cannot deadlock.
                     if self._on_state_changed:
@@ -361,7 +369,7 @@ class SSLMatrixClient:
             self._watchdog_thread = threading.Thread(target=self._watchdog_loop, daemon=True)
             self._watchdog_thread.start()
             self._send_get_desk()
-        except Exception:
+        except BaseException:
             self._running = False
             if self._sock:
                 try:
@@ -387,87 +395,87 @@ class SSLMatrixClient:
         return False
 
     def request_sync(self):
-        """Send the full sync sequence matching MatrixRemote.requestSync().
+        """Send the full sync sequence, adapted to the detected console profile.
 
-        15 messages to fetch all console state.
+        Skips feature-specific requests for consoles that don't support them
+        (e.g. Duality/AWS have no insert matrix, XPatch, or DAW layers).
         """
         with self._lock:
             if not self.state.desk.online:
                 log.warning("request_sync called before desk is online")
                 return
             ds = self.state.desk.serial
+            prof = self.state.profile
         ms = self.my_serial
 
-        # Channel names
+        # Channel names (all consoles)
         self.send(channels.build_get_chan_names(ds, ms))
         time.sleep(0.05)
 
-        # DAW layer protocols (1-4)
-        for layer in range(1, 5):
-            self.send(profiles.build_get_daw_layer_protocol(ds, ms, layer))
+        # DAW layer protocols (Matrix only)
+        if prof.has_daw_layers:
+            for layer in range(1, prof.num_daw_layers + 1):
+                self.send(profiles.build_get_daw_layer_protocol(ds, ms, layer))
+                time.sleep(0.05)
+            self.send(profiles.build_get_transport_lock(ds, ms))
+            time.sleep(0.05)
+            self.send(profiles.build_get_profiles(ds, ms))
+            time.sleep(0.05)
+            for layer in range(1, prof.num_daw_layers + 1):
+                self.send(profiles.build_get_profile_for_daw_layer(ds, ms, layer))
+                time.sleep(0.05)
+
+        # Delta: automation mode, motors, MDAC (Matrix only)
+        if prof.has_delta:
+            self.send(delta.build_get_auto_mode(ds, ms))
+            time.sleep(0.05)
+            self.send(delta.build_get_motors_off(ds, ms))
+            time.sleep(0.05)
+            self.send(delta.build_get_mdac_meters(ds, ms))
             time.sleep(0.05)
 
-        # Transport lock
-        self.send(profiles.build_get_transport_lock(ds, ms))
-        time.sleep(0.05)
-
-        # Profile list
-        self.send(profiles.build_get_profiles(ds, ms))
-        time.sleep(0.05)
-
-        # Profile for each DAW layer
-        for layer in range(1, 5):
-            self.send(profiles.build_get_profile_for_daw_layer(ds, ms, layer))
-            time.sleep(0.05)
-
-        # Delta: automation mode, motors, MDAC
-        self.send(delta.build_get_auto_mode(ds, ms))
-        time.sleep(0.05)
-        self.send(delta.build_get_motors_off(ds, ms))
-        time.sleep(0.05)
-        self.send(delta.build_get_mdac_meters(ds, ms))
-        time.sleep(0.05)
-
-        # Display settings
+        # Display settings (all consoles)
         self.send(channels.build_get_display_17_32(ds, ms))
         time.sleep(0.05)
         self.send(channels.build_get_flip_scrib_strip(ds, ms))
         time.sleep(0.05)
 
-        # Insert matrix
-        self.send(routing.build_get_insert_names_v2(ds, ms))
-        time.sleep(0.05)
-        self.send(routing.build_get_chain_info_v2(ds, ms))
-        time.sleep(0.05)
-        self.send(routing.build_get_chan_matrix_info_v2(ds, ms))
-        time.sleep(0.05)
-        self.send(routing.build_get_matrix_preset_list(ds, ms))
-        time.sleep(0.05)
+        # Insert matrix (Matrix only)
+        if prof.has_insert_matrix:
+            self.send(routing.build_get_insert_names_v2(ds, ms))
+            time.sleep(0.05)
+            self.send(routing.build_get_chain_info_v2(ds, ms))
+            time.sleep(0.05)
+            self.send(routing.build_get_chan_matrix_info_v2(ds, ms))
+            time.sleep(0.05)
+            self.send(routing.build_get_matrix_preset_list(ds, ms))
+            time.sleep(0.05)
 
-        # Projects
+        # Projects (all consoles)
         self.send(projects.build_get_directory_list(ds, ms, "/projects", 1))
         time.sleep(0.05)
 
-        # Total Recall
+        # Total Recall (all consoles)
         self.send(total_recall.build_get_tr_state(ds, ms))
         time.sleep(0.05)
         self.send(total_recall.build_get_tr_list(ds, ms))
         time.sleep(0.05)
 
-        # Channel Names Presets
+        # Channel Names Presets (all consoles)
         self.send(chan_presets.build_get_chan_names_preset_list(ds, ms))
         time.sleep(0.05)
 
-        # XPatch
-        self.send(xpatch.build_get_chan_setup(ds, ms))
-        time.sleep(0.05)
-        self.send(xpatch.build_get_routing_data(ds, ms))
-        time.sleep(0.05)
-        self.send(xpatch.build_get_presets_list(ds, ms))
-        time.sleep(0.05)
-        self.send(xpatch.build_get_chains_list(ds, ms))
-        time.sleep(0.05)
-        self.send(xpatch.build_get_midi_setup(ds, ms))
+        # XPatch (Matrix only)
+        if prof.has_xpatch:
+            self.send(xpatch.build_get_chan_setup(ds, ms))
+            time.sleep(0.05)
+            self.send(xpatch.build_get_routing_data(ds, ms))
+            time.sleep(0.05)
+            self.send(xpatch.build_get_presets_list(ds, ms))
+            time.sleep(0.05)
+            self.send(xpatch.build_get_chains_list(ds, ms))
+            time.sleep(0.05)
+            self.send(xpatch.build_get_midi_setup(ds, ms))
 
         # Allow time for replies
         time.sleep(0.5)

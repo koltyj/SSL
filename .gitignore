@@ -25,3 +25,5 @@ reverse-engineering/
 # Dev/debug scripts
 probe_console.py
 audit_runner.py
+scripts/crawl_ssl_matrix_docs*
+scripts/manual_snapshots/

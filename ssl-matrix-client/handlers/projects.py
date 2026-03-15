@@ -1,7 +1,7 @@
 """Projects handler: project/title CRUD, directory listing, disk info.
 
 Builders send commands to the console, handlers parse replies and update state.
-All payload formats from decompiled ProjectsHandler.java.
+Payload formats reverse-engineered from the SSL MatrixRemote protocol.
 """
 
 import logging

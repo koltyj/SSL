@@ -1,7 +1,8 @@
-"""Wire format for SSL Matrix UDP protocol.
+"""Wire format for SSL console UDP protocol.
 
 Implements TxMessage (outgoing) and RxMessage (incoming) with the 16-byte
-header format and payload serialization matching the Java MatrixRemote app.
+header format and payload serialization reverse-engineered from the
+SSL MatrixRemote protocol.
 """
 
 import struct
@@ -15,7 +16,7 @@ BUFFER_SIZE = 2048
 
 
 class MessageCode(IntEnum):
-    """All 197 message codes from MessageCodes.java."""
+    """All 197 message codes from the SSL console UDP protocol."""
 
     GET_DESK = 5
     GET_DESK_REPLY = 6

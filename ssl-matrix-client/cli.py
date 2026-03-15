@@ -47,6 +47,16 @@ class SSLMatrixCLI(cmd.Cmd):
             return False
         return True
 
+    def _require_feature(self, feature_attr, feature_name):
+        """Check connection and that the console supports a feature."""
+        if not self._require_connected():
+            return False
+        profile = self.client.state.profile
+        if not getattr(profile, feature_attr, False):
+            print(f"{feature_name} is not available on {profile.display_name}.")
+            return False
+        return True
+
     # --- TUI ---
 
     def do_tui(self, arg):
@@ -164,7 +174,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_profiles(self, arg):
         """List all profiles on the console."""
-        if not self._require_connected():
+        if not self._require_feature("has_daw_layers", "DAW profiles"):
             return
         profs = self.client.get_profiles()
         if not profs:
@@ -180,7 +190,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_layers(self, arg):
         """Show DAW layer protocols."""
-        if not self._require_connected():
+        if not self._require_feature("has_daw_layers", "DAW layers"):
             return
         layers = self.client.get_daw_layers()
         print(f"{'Layer':6s} {'Protocol':8s} {'Profile':32s}")
@@ -192,7 +202,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_setprofile(self, arg):
         """Set profile for a DAW layer. Usage: setprofile <layer> <profile_name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_daw_layers", "DAW layers"):
             return
         parts = arg.split(None, 1)
         if len(parts) < 2:
@@ -213,7 +223,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_clearlayer(self, arg):
         """Clear profile from a DAW layer. Usage: clearlayer <layer>"""
-        if not self._require_connected():
+        if not self._require_feature("has_daw_layers", "DAW layers"):
             return
         try:
             layer = int(arg.strip())
@@ -228,7 +238,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_transportlock(self, arg):
         """Set transport lock layer. Usage: transportlock <0-4> (0=none)"""
-        if not self._require_connected():
+        if not self._require_feature("has_daw_layers", "DAW layers"):
             return
         if not arg.strip():
             tl = self.client.state.transport_lock_layer
@@ -253,7 +263,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_automode(self, arg):
         """Get or set automation mode. Usage: automode [legacy|delta]"""
-        if not self._require_connected():
+        if not self._require_feature("has_delta", "Automation mode"):
             return
         if not arg.strip():
             mode = self.client.state.automation_mode
@@ -271,7 +281,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_motors(self, arg):
         """Get or set motors. Usage: motors [on|off]"""
-        if not self._require_connected():
+        if not self._require_feature("has_delta", "Motor control"):
             return
         if not arg.strip():
             m = self.client.state.motors_off
@@ -287,7 +297,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_mdac(self, arg):
         """Get or set MDAC meters. Usage: mdac [on|off]"""
-        if not self._require_connected():
+        if not self._require_feature("has_delta", "MDAC meters"):
             return
         if not arg.strip():
             m = self.client.state.mdac_meters
@@ -320,7 +330,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_devices(self, arg):
         """List all 16 insert devices with name/assigned/stereo status."""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         devices = self.client.get_devices()
         print(f"{'#':>3s}  {'Name':16s} {'Assigned':8s} {'Stereo':6s}")
@@ -332,7 +342,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_chains(self, arg):
         """List all chains with their elements."""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         chains = self.client.get_chains()
         if not chains:
@@ -346,7 +356,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_matrix(self, arg):
         """Show channel insert routing grid."""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         inserts = self.client.get_channel_inserts()
         if not inserts:
@@ -360,7 +370,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_assign(self, arg):
         """Assign insert to channel. Usage: assign <chan> <device> <slot> | assign <chan> chain <name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         parts = arg.split()
         if len(parts) < 2:
@@ -394,7 +404,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_deassign(self, arg):
         """Remove all inserts from a channel. Usage: deassign <chan>"""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         try:
             chan = int(arg.strip())
@@ -406,7 +416,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_stereo(self, arg):
         """Link or unlink a stereo insert pair. Usage: stereo <chan1> <chan2> [off]"""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         parts = arg.split()
         if len(parts) < 2:
@@ -426,7 +436,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_matrix_presets(self, arg):
         """List matrix routing presets."""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         presets = self.client.get_matrix_presets()
         if not presets:
@@ -437,7 +447,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_load_preset(self, arg):
         """Load a matrix preset. Usage: load_preset <name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         name = arg.strip()
         if not name:
@@ -448,7 +458,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_save_preset(self, arg):
         """Save current matrix as a preset. Usage: save_preset <name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_insert_matrix", "Insert matrix"):
             return
         name = arg.strip()
         if not name:
@@ -650,7 +660,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_xpatch_setup(self, arg):
         """Show XPatch channel setup (device/dest names, levels, mode)."""
-        if not self._require_connected():
+        if not self._require_feature("has_xpatch", "XPatch"):
             return
         chans = self.client.get_xpatch_channels()
         print(f"{'Ch':>3s}  {'Device':16s} {'Dest':16s} {'In-10':5s} {'Out-10':6s} {'Mode':4s}")
@@ -664,7 +674,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_xpatch_routes(self, arg):
         """Show XPatch routing grid."""
-        if not self._require_connected():
+        if not self._require_feature("has_xpatch", "XPatch"):
             return
         routes = self.client.get_xpatch_routes()
         if not routes:
@@ -676,7 +686,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_xpatch_route(self, arg):
         """Set an XPatch route. Usage: xpatch_route <dest> <src>"""
-        if not self._require_connected():
+        if not self._require_feature("has_xpatch", "XPatch"):
             return
         parts = arg.split()
         if len(parts) < 2:
@@ -692,7 +702,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_xpatch_presets(self, arg):
         """List XPatch presets."""
-        if not self._require_connected():
+        if not self._require_feature("has_xpatch", "XPatch"):
             return
         presets = self.client.get_xpatch_presets()
         if not presets:
@@ -706,7 +716,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_xpatch_select(self, arg):
         """Select an XPatch preset. Usage: xpatch_select <index>"""
-        if not self._require_connected():
+        if not self._require_feature("has_xpatch", "XPatch"):
             return
         try:
             idx = int(arg.strip())
@@ -720,7 +730,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_wheel_mode(self, arg):
         """Get or set V-pot wheel mode. Usage: wheel_mode <layer> [mode]"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split()
         if not parts:
@@ -769,7 +779,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_cc_names(self, arg):
         """Show CC parameter names. Usage: cc_names <layer> <type>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split()
         if len(parts) < 2:
@@ -805,7 +815,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_cc_names_set(self, arg):
         """Set CC parameter names. Usage: cc_names_set <layer> <type> <name1> [name2...]"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split()
         if len(parts) < 3:
@@ -837,7 +847,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_keymap(self, arg):
         """Show current keymap name for a layer. Usage: softkey_keymap <layer>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         try:
             layer = int(arg.strip())
@@ -862,7 +872,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_edit(self, arg):
         """Open a keymap edit session. Usage: softkey_edit <layer> <name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split(None, 1)
         if len(parts) < 2:
@@ -918,7 +928,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_list(self, arg):
         """Show all key assignments from current edit session."""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         with self.client._lock:
             in_edit = self.client.state.softkeys.in_edit
@@ -935,7 +945,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_usb(self, arg):
         """Assign USB command to a key. Usage: softkey_usb <layer> <key> <row> <cmd>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split(None, 3)
         if len(parts) < 4:
@@ -963,7 +973,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_midi(self, arg):
         """Assign MIDI function to a key. Usage: softkey_midi <layer> <key> <row> <func_index>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split()
         if len(parts) < 4:
@@ -997,7 +1007,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_name(self, arg):
         """Set keycap label. Usage: softkey_name <key> <row> <name>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split(None, 2)
         if len(parts) < 3:
@@ -1021,7 +1031,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_blank(self, arg):
         """Clear a key assignment. Usage: softkey_blank <key> <row>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         parts = arg.split()
         if len(parts) < 2:
@@ -1042,7 +1052,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_save(self, arg):
         """Save and close the current keymap edit session."""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         from .handlers.softkeys import build_save_edit_keymap
 
@@ -1053,7 +1063,7 @@ class SSLMatrixCLI(cmd.Cmd):
 
     def do_softkey_midi_funcs(self, arg):
         """List MIDI functions available for a layer. Usage: softkey_midi_funcs <layer>"""
-        if not self._require_connected():
+        if not self._require_feature("has_softkeys", "Softkeys"):
             return
         try:
             layer = int(arg.strip())
@@ -1372,6 +1382,8 @@ class SSLMatrixCLI(cmd.Cmd):
         Note: Fader group assignment is set via hardware buttons on the console
         surface. This command tracks your intended assignment in software.
         """
+        if not self._require_feature("has_daw_layers", "Split board"):
+            return
         parts = arg.split()
         if not parts:
             print("Usage: split <left_protocol> <right_protocol>")
@@ -1644,30 +1656,34 @@ def main():
 
     if args.command:
         # One-shot mode: connect, run command, exit
-        cli.client.connect()
-        if not cli.client.wait_online(timeout=5):
-            print("Connection timeout.", file=sys.stderr)
-            sys.exit(1)
-        cli._connected = True
-        cli.client.request_sync()
+        try:
+            cli.client.connect()
+            if not cli.client.wait_online(timeout=5):
+                print("Connection timeout.", file=sys.stderr)
+                sys.exit(1)
+            cli._connected = True
+            cli.client.request_sync()
 
-        cmd_name = args.command[0]
-        cmd_args = " ".join(args.command[1:])
+            cmd_name = args.command[0]
+            cmd_args = " ".join(args.command[1:])
 
-        method = getattr(cli, f"do_{cmd_name}", None)
-        if method:
-            method(cmd_args)
-        else:
-            print(f"Unknown command: {cmd_name}", file=sys.stderr)
-            sys.exit(1)
-
-        cli.client.disconnect()
+            method = getattr(cli, f"do_{cmd_name}", None)
+            if method:
+                method(cmd_args)
+            else:
+                print(f"Unknown command: {cmd_name}", file=sys.stderr)
+                sys.exit(1)
+        except (KeyboardInterrupt, EOFError):
+            print()
+        finally:
+            cli.client.disconnect()
     else:
         # Interactive REPL
         try:
             cli.cmdloop()
         except KeyboardInterrupt:
             print("\nBye.")
+        finally:
             cli.client.disconnect()
 
 

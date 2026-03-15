@@ -1,9 +1,8 @@
-"""Template save/load/diff/apply core logic for SSL Matrix session templates.
+"""Template save/load/diff/apply core logic for SSL console session templates.
 
 Templates capture restorable ConsoleState fields and write them to JSON files
-at ~/.ssl-matrix/templates/. The CLI commands in Plan 03 call these functions
-directly. XPatch data is stored for reference but never applied via SET
-commands (all XPatch SET commands fail silently on this console).
+at ~/.ssl-matrix/templates/. XPatch data is stored for reference but never
+applied via SET commands (XPatch SET commands fail silently).
 """
 
 import dataclasses
@@ -135,8 +134,17 @@ def save_template(
     return path
 
 
+def _validate_template_path(path: Path) -> Path:
+    """Resolve path and reject traversal attempts (.. in the name)."""
+    p = Path(path)
+    if ".." in p.parts:
+        raise ValueError(f"Path traversal not allowed: {path}")
+    return p
+
+
 def load_template(path: Path) -> dict:
     """Read and parse a template JSON file. Returns the envelope dict."""
+    _validate_template_path(path)
     return json.loads(Path(path).read_text())
 
 
@@ -176,7 +184,7 @@ def list_templates(template_dir: Optional[Path] = None) -> list:
 
 def delete_template(path: Path) -> None:
     """Delete a template file. Raises FileNotFoundError if it does not exist."""
-    p = Path(path)
+    p = _validate_template_path(path)
     if not p.exists():
         raise FileNotFoundError(f"Template not found: {path}")
     p.unlink()
@@ -345,7 +353,8 @@ def build_apply_commands(
                     commands.append((pkt, f"Set layer {layer_num} profile: '{tmpl_profile}'"))
 
     # --- routing: insert names FIRST, then assignments (Pitfall 3) ---
-    if expand_all or "routing" in categories:
+    # Skip routing commands for consoles without insert matrix (Duality, AWS)
+    if (expand_all or "routing" in categories) and current_state.profile.has_insert_matrix:
         # Step 1: device names
         tmpl_devices = tmpl.get("devices", [])
         for i, tmpl_dev in enumerate(tmpl_devices):
@@ -380,7 +389,11 @@ def build_apply_commands(
     # --- display ---
     if expand_all or "display" in categories:
         tmpl_auto = tmpl.get("automation_mode")
-        if tmpl_auto is not None and current_state.automation_mode != tmpl_auto:
+        if (
+            tmpl_auto is not None
+            and current_state.automation_mode != tmpl_auto
+            and current_state.profile.has_delta
+        ):
             pkt = build_set_auto_mode(desk_serial, my_serial, tmpl_auto)
             commands.append((pkt, f"Set automation_mode: {tmpl_auto}"))
 

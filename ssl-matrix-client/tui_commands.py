@@ -65,57 +65,63 @@ class InputScreen(ModalScreen[Optional[str]]):
 class ConsoleCmdProvider(Provider):
     """Textual command palette provider for SSL Matrix console commands."""
 
-    _COMMANDS: ClassVar[list[tuple[str, str, str]]] = [
+    # (name, help_text, method_name, required_feature_attr_or_None)
+    _COMMANDS: ClassVar[list[tuple[str, str, str, str | None]]] = [
         # Connection
-        ("connect", "Connect to console", "_cmd_connect"),
-        ("disconnect", "Disconnect from console", "_cmd_disconnect"),
-        ("sync", "Refresh all console state", "_cmd_sync"),
+        ("connect", "Connect to console", "_cmd_connect", None),
+        ("disconnect", "Disconnect from console", "_cmd_disconnect", None),
+        ("sync", "Refresh all console state", "_cmd_sync", None),
         # Channel operations
-        ("rename", "Rename a channel", "_cmd_rename"),
-        ("reset names", "Reset all channel names to defaults", "_cmd_reset_names"),
+        ("rename", "Rename a channel", "_cmd_rename", None),
+        ("reset names", "Reset all channel names to defaults", "_cmd_reset_names", None),
         # DAW layers
-        ("layers", "Show DAW layer assignments", "_cmd_layers"),
-        ("set layer", "Set profile for a DAW layer", "_cmd_set_layer"),
-        ("clear layer", "Clear a DAW layer profile", "_cmd_clear_layer"),
+        ("layers", "Show DAW layer assignments", "_cmd_layers", "has_daw_layers"),
+        ("set layer", "Set profile for a DAW layer", "_cmd_set_layer", "has_daw_layers"),
+        ("clear layer", "Clear a DAW layer profile", "_cmd_clear_layer", "has_daw_layers"),
         # Automation / Motors
-        ("auto legacy", "Set automation mode to Legacy", "_cmd_auto_legacy"),
-        ("auto delta", "Set automation mode to Delta", "_cmd_auto_delta"),
-        ("motors on", "Enable motors", "_cmd_motors_on"),
-        ("motors off", "Disable motors", "_cmd_motors_off"),
+        ("auto legacy", "Set automation mode to Legacy", "_cmd_auto_legacy", "has_delta"),
+        ("auto delta", "Set automation mode to Delta", "_cmd_auto_delta", "has_delta"),
+        ("motors on", "Enable motors", "_cmd_motors_on", "has_delta"),
+        ("motors off", "Disable motors", "_cmd_motors_off", "has_delta"),
         # Wheel / V-pot
-        ("wheel mode", "Set V-pot wheel mode for a layer", "_cmd_wheel_mode"),
+        ("wheel mode", "Set V-pot wheel mode for a layer", "_cmd_wheel_mode", "has_softkeys"),
         # Templates
-        ("template save", "Save current console state as template", "_cmd_template_save"),
-        ("template load", "Load a saved template", "_cmd_template_load"),
-        ("template list", "List all saved templates", "_cmd_template_list"),
-        ("template delete", "Delete a saved template", "_cmd_template_delete"),
+        ("template save", "Save current console state as template", "_cmd_template_save", None),
+        ("template load", "Load a saved template", "_cmd_template_load", None),
+        ("template list", "List all saved templates", "_cmd_template_list", None),
+        ("template delete", "Delete a saved template", "_cmd_template_delete", None),
         # Projects
-        ("project info", "Show current project and title", "_cmd_project_info"),
-        ("new project", "Create a new project on console", "_cmd_new_project"),
+        ("project info", "Show current project and title", "_cmd_project_info", None),
+        ("new project", "Create a new project on console", "_cmd_new_project", None),
         # Split board
-        ("split", "Configure split board mode", "_cmd_split"),
-        ("split clear", "Clear split board config", "_cmd_split_clear"),
+        ("split", "Configure split board mode", "_cmd_split", "has_daw_layers"),
+        ("split clear", "Clear split board config", "_cmd_split_clear", "has_daw_layers"),
         # Insert routing
-        ("assign", "Assign insert device to channel", "_cmd_assign"),
-        ("deassign", "Remove insert from channel", "_cmd_deassign"),
+        ("assign", "Assign insert device to channel", "_cmd_assign", "has_insert_matrix"),
+        ("deassign", "Remove insert from channel", "_cmd_deassign", "has_insert_matrix"),
         # Total Recall
-        ("tr take", "Take a Total Recall snapshot", "_cmd_tr_take"),
-        ("tr enable", "Toggle Total Recall on/off", "_cmd_tr_enable"),
+        ("tr take", "Take a Total Recall snapshot", "_cmd_tr_take", None),
+        ("tr enable", "Toggle Total Recall on/off", "_cmd_tr_enable", None),
         # Soft keys
-        ("softkey list", "List soft key assignments", "_cmd_softkey_list"),
+        ("softkey list", "List soft key assignments", "_cmd_softkey_list", "has_softkeys"),
         # Navigation
-        ("channels", "Show channel strips", "_cmd_show_channels"),
-        ("routing", "Show insert routing", "_cmd_show_routing"),
-        ("templates", "Show templates view", "_cmd_show_templates"),
-        ("settings", "Show console settings", "_cmd_show_settings"),
+        ("channels", "Show channel strips", "_cmd_show_channels", None),
+        ("routing", "Show insert routing", "_cmd_show_routing", "has_insert_matrix"),
+        ("templates", "Show templates view", "_cmd_show_templates", None),
+        ("settings", "Show console settings", "_cmd_show_settings", None),
         # App
-        ("quit", "Exit TUI", "_cmd_quit"),
+        ("quit", "Exit TUI", "_cmd_quit", None),
     ]
 
     async def search(self, query: str) -> Hits:
         """Yield fuzzy-matched command hits for the given query."""
         matcher = self.matcher(query)
-        for name, help_text, method_name in self._COMMANDS:
+        # Filter commands by console profile features
+        app = self.app
+        profile = getattr(getattr(getattr(app, "client", None), "state", None), "profile", None)
+        for name, help_text, method_name, feature_attr in self._COMMANDS:
+            if feature_attr and profile and not getattr(profile, feature_attr, False):
+                continue
             score = matcher.match(name)
             if score > 0:
                 callback = getattr(self, method_name)
