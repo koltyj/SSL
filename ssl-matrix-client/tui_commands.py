@@ -65,52 +65,108 @@ class InputScreen(ModalScreen[Optional[str]]):
 class ConsoleCmdProvider(Provider):
     """Textual command palette provider for SSL Matrix console commands."""
 
-    # (name, help_text, method_name, required_feature_attr_or_None)
-    _COMMANDS: ClassVar[list[tuple[str, str, str, str | None]]] = [
+    _SIGMA_ALLOWED_COMMANDS: ClassVar[set[str]] = {
+        "connect",
+        "disconnect",
+        "sync",
+        "rename",
+        "fader",
+        "pan",
+        "solo",
+        "mute",
+        "phase",
+        "channels",
+        "monitor",
+        "monitor source",
+        "headphones",
+        "dim",
+        "console",
+        "notes",
+        "quit",
+    }
+
+    # (name, help_text, method_name, required_feature_attr_or_None, scope)
+    _COMMANDS: ClassVar[list[tuple[str, str, str, str | None, str]]] = [
         # Connection
-        ("connect", "Connect to console", "_cmd_connect", None),
-        ("disconnect", "Disconnect from console", "_cmd_disconnect", None),
-        ("sync", "Refresh all console state", "_cmd_sync", None),
+        ("connect", "Connect to console", "_cmd_connect", None, "all"),
+        ("disconnect", "Disconnect from console", "_cmd_disconnect", None, "all"),
+        ("sync", "Refresh all console state", "_cmd_sync", None, "all"),
         # Channel operations
-        ("rename", "Rename a channel", "_cmd_rename", None),
-        ("reset names", "Reset all channel names to defaults", "_cmd_reset_names", None),
+        ("rename", "Rename a channel", "_cmd_rename", None, "all"),
+        ("reset names", "Reset all channel names to defaults", "_cmd_reset_names", None, "matrix"),
+        ("fader", "Set Sigma channel fader", "_cmd_fader", None, "sigma"),
+        ("pan", "Set Sigma channel pan", "_cmd_pan", None, "sigma"),
+        ("solo", "Toggle Sigma channel solo", "_cmd_solo", None, "sigma"),
+        ("mute", "Toggle Sigma channel mute", "_cmd_mute", None, "sigma"),
+        ("phase", "Toggle Sigma channel phase", "_cmd_phase", None, "sigma"),
         # DAW layers
-        ("layers", "Show DAW layer assignments", "_cmd_layers", "has_daw_layers"),
-        ("set layer", "Set profile for a DAW layer", "_cmd_set_layer", "has_daw_layers"),
-        ("clear layer", "Clear a DAW layer profile", "_cmd_clear_layer", "has_daw_layers"),
+        ("layers", "Show DAW layer assignments", "_cmd_layers", "has_daw_layers", "matrix"),
+        ("set layer", "Set profile for a DAW layer", "_cmd_set_layer", "has_daw_layers", "matrix"),
+        (
+            "clear layer",
+            "Clear a DAW layer profile",
+            "_cmd_clear_layer",
+            "has_daw_layers",
+            "matrix",
+        ),
         # Automation / Motors
-        ("auto legacy", "Set automation mode to Legacy", "_cmd_auto_legacy", "has_delta"),
-        ("auto delta", "Set automation mode to Delta", "_cmd_auto_delta", "has_delta"),
-        ("motors on", "Enable motors", "_cmd_motors_on", "has_delta"),
-        ("motors off", "Disable motors", "_cmd_motors_off", "has_delta"),
+        ("auto legacy", "Set automation mode to Legacy", "_cmd_auto_legacy", "has_delta", "matrix"),
+        ("auto delta", "Set automation mode to Delta", "_cmd_auto_delta", "has_delta", "matrix"),
+        ("motors on", "Enable motors", "_cmd_motors_on", "has_delta", "matrix"),
+        ("motors off", "Disable motors", "_cmd_motors_off", "has_delta", "matrix"),
         # Wheel / V-pot
-        ("wheel mode", "Set V-pot wheel mode for a layer", "_cmd_wheel_mode", "has_softkeys"),
+        (
+            "wheel mode",
+            "Set V-pot wheel mode for a layer",
+            "_cmd_wheel_mode",
+            "has_softkeys",
+            "matrix",
+        ),
         # Templates
-        ("template save", "Save current console state as template", "_cmd_template_save", None),
-        ("template load", "Load a saved template", "_cmd_template_load", None),
-        ("template list", "List all saved templates", "_cmd_template_list", None),
-        ("template delete", "Delete a saved template", "_cmd_template_delete", None),
+        (
+            "template save",
+            "Save current console state as template",
+            "_cmd_template_save",
+            None,
+            "matrix",
+        ),
+        ("template load", "Load a saved template", "_cmd_template_load", None, "matrix"),
+        ("template list", "List all saved templates", "_cmd_template_list", None, "matrix"),
+        ("template delete", "Delete a saved template", "_cmd_template_delete", None, "matrix"),
         # Projects
-        ("project info", "Show current project and title", "_cmd_project_info", None),
-        ("new project", "Create a new project on console", "_cmd_new_project", None),
+        ("project info", "Show current project and title", "_cmd_project_info", None, "matrix"),
+        ("new project", "Create a new project on console", "_cmd_new_project", None, "matrix"),
         # Split board
-        ("split", "Configure split board mode", "_cmd_split", "has_daw_layers"),
-        ("split clear", "Clear split board config", "_cmd_split_clear", "has_daw_layers"),
+        ("split", "Configure split board mode", "_cmd_split", "has_daw_layers", "matrix"),
+        ("split clear", "Clear split board config", "_cmd_split_clear", "has_daw_layers", "matrix"),
         # Insert routing
-        ("assign", "Assign insert device to channel", "_cmd_assign", "has_insert_matrix"),
-        ("deassign", "Remove insert from channel", "_cmd_deassign", "has_insert_matrix"),
+        ("assign", "Assign insert device to channel", "_cmd_assign", "has_insert_matrix", "matrix"),
+        ("deassign", "Remove insert from channel", "_cmd_deassign", "has_insert_matrix", "matrix"),
         # Total Recall
-        ("tr take", "Take a Total Recall snapshot", "_cmd_tr_take", None),
-        ("tr enable", "Toggle Total Recall on/off", "_cmd_tr_enable", None),
+        ("tr take", "Take a Total Recall snapshot", "_cmd_tr_take", None, "matrix"),
+        ("tr enable", "Toggle Total Recall on/off", "_cmd_tr_enable", None, "matrix"),
         # Soft keys
-        ("softkey list", "List soft key assignments", "_cmd_softkey_list", "has_softkeys"),
+        (
+            "softkey list",
+            "List soft key assignments",
+            "_cmd_softkey_list",
+            "has_softkeys",
+            "matrix",
+        ),
+        # Sigma monitor/control
+        ("monitor", "Show Sigma monitor tab", "_cmd_show_monitor", None, "sigma"),
+        ("monitor source", "Toggle Sigma monitor source", "_cmd_monitor_source", None, "sigma"),
+        ("headphones", "Toggle Sigma headphone source", "_cmd_headphones", None, "sigma"),
+        ("dim", "Set Sigma dim level", "_cmd_dim", None, "sigma"),
+        ("console", "Show Sigma console overview", "_cmd_show_console", None, "sigma"),
+        ("notes", "Show Sigma validation notes", "_cmd_show_notes", None, "sigma"),
         # Navigation
-        ("channels", "Show channel strips", "_cmd_show_channels", None),
-        ("routing", "Show insert routing", "_cmd_show_routing", "has_insert_matrix"),
-        ("templates", "Show templates view", "_cmd_show_templates", None),
-        ("settings", "Show console settings", "_cmd_show_settings", None),
+        ("channels", "Show channel strips", "_cmd_show_channels", None, "all"),
+        ("routing", "Show insert routing", "_cmd_show_routing", "has_insert_matrix", "matrix"),
+        ("templates", "Show templates view", "_cmd_show_templates", None, "matrix"),
+        ("settings", "Show console settings", "_cmd_show_settings", None, "matrix"),
         # App
-        ("quit", "Exit TUI", "_cmd_quit", None),
+        ("quit", "Exit TUI", "_cmd_quit", None, "all"),
     ]
 
     async def search(self, query: str) -> Hits:
@@ -118,8 +174,14 @@ class ConsoleCmdProvider(Provider):
         matcher = self.matcher(query)
         # Filter commands by console profile features
         app = self.app
+        is_sigma = getattr(app, "console_type", "matrix") == "sigma"
         profile = getattr(getattr(getattr(app, "client", None), "state", None), "profile", None)
-        for name, help_text, method_name, feature_attr in self._COMMANDS:
+        for name, help_text, method_name, feature_attr, scope in self._COMMANDS:
+            if is_sigma:
+                if scope == "matrix" or name not in self._SIGMA_ALLOWED_COMMANDS:
+                    continue
+            elif scope == "sigma":
+                continue
             if feature_attr and profile and not getattr(profile, feature_attr, False):
                 continue
             score = matcher.match(name)
@@ -163,6 +225,9 @@ class ConsoleCmdProvider(Provider):
     def _cmd_sync(self) -> None:
         if not self._require_connected():
             return
+        if not hasattr(self.app.client, "request_sync"):
+            self.app.notify("Sync is not available for this console", severity="warning")
+            return
         self._run_in_thread(lambda: self.app.client.request_sync())
         self.app.notify("Syncing...")
 
@@ -199,6 +264,86 @@ class ConsoleCmdProvider(Provider):
             self._prompt_input(f"Rename channel {sel}:", "KICK", on_input)
         else:
             self._prompt_input("Rename channel:", "1 KICK", on_input)
+
+    def _cmd_fader(self) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            parts = value.split()
+            if len(parts) < 2:
+                self.app.notify("Usage: <channel 1-16> <level 0.0-1.0>", severity="error")
+                return
+            try:
+                channel = int(parts[0])
+                level = float(parts[1])
+            except ValueError:
+                self.app.notify("Channel must be an int and level a float", severity="error")
+                return
+            if not 1 <= channel <= 16 or not 0.0 <= level <= 1.0:
+                self.app.notify("Channel must be 1-16 and level 0.0-1.0", severity="error")
+                return
+            self._run_in_thread(lambda: self.app.client.set_fader(channel, level))
+            self.app.notify(f"Ch {channel} fader → {level:.3f}")
+
+        self._prompt_input("Set Sigma fader:", "1 0.750", on_input)
+
+    def _cmd_pan(self) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            parts = value.split()
+            if len(parts) < 2:
+                self.app.notify("Usage: <channel 1-16> <pan -1.0..1.0>", severity="error")
+                return
+            try:
+                channel = int(parts[0])
+                pan = float(parts[1])
+            except ValueError:
+                self.app.notify("Channel must be an int and pan a float", severity="error")
+                return
+            if not 1 <= channel <= 16 or not -1.0 <= pan <= 1.0:
+                self.app.notify("Channel must be 1-16 and pan -1.0..1.0", severity="error")
+                return
+            self._run_in_thread(lambda: self.app.client.set_pan(channel, pan))
+            self.app.notify(f"Ch {channel} pan → {pan:+.2f}")
+
+        self._prompt_input("Set Sigma pan:", "1 -0.10", on_input)
+
+    def _cmd_solo(self) -> None:
+        self._toggle_sigma_channel("solo", self.app.client.set_solo)
+
+    def _cmd_mute(self) -> None:
+        self._toggle_sigma_channel("mute", self.app.client.set_mute)
+
+    def _cmd_phase(self) -> None:
+        self._toggle_sigma_channel("phase", self.app.client.set_phase)
+
+    def _toggle_sigma_channel(self, label: str, setter: Callable[[int, bool], None]) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            parts = value.split()
+            if len(parts) < 2:
+                self.app.notify(f"Usage: <channel 1-16> <{label} on|off>", severity="error")
+                return
+            try:
+                channel = int(parts[0])
+            except ValueError:
+                self.app.notify("Channel must be an int", severity="error")
+                return
+            if not 1 <= channel <= 16:
+                self.app.notify("Channel must be 1-16", severity="error")
+                return
+            state = parts[1].lower() in ("on", "1", "true", "yes")
+            self._run_in_thread(lambda: setter(channel, state))
+            self.app.notify(f"Ch {channel} {label} → {'ON' if state else 'OFF'}")
+
+        self._prompt_input(
+            f"Set Sigma {label}:", f"1 {'on' if label != 'pan' else ''}".strip(), on_input
+        )
 
     def _cmd_reset_names(self) -> None:
         if not self._require_connected():
@@ -599,6 +744,70 @@ class ConsoleCmdProvider(Provider):
             lines = [f"Key {i + 1}: {k.keycap_name or '(blank)'}" for i, k in enumerate(keys[:12])]
         self.app.notify("\n".join(lines), severity="information")
 
+    def _cmd_headphones(self) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            parts = value.split()
+            if len(parts) < 2:
+                self.app.notify("Usage: <source 1-4> <on|off>", severity="error")
+                return
+            try:
+                source = int(parts[0])
+            except ValueError:
+                self.app.notify("Source must be an int", severity="error")
+                return
+            if not 1 <= source <= 4:
+                self.app.notify("Source must be 1-4", severity="error")
+                return
+            state = parts[1].lower() in ("on", "1", "true", "yes")
+            self._run_in_thread(lambda: self.app.client.set_headphone_source(source - 1, state))
+            self.app.notify(f"Headphone source {source} → {'ON' if state else 'OFF'}")
+
+        self._prompt_input("Set Sigma headphone source:", "1 on", on_input)
+
+    def _cmd_monitor_source(self) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            parts = value.split()
+            if len(parts) < 2:
+                self.app.notify("Usage: <source 1-7> <on|off>", severity="error")
+                return
+            try:
+                source = int(parts[0])
+            except ValueError:
+                self.app.notify("Source must be an int", severity="error")
+                return
+            if not 1 <= source <= 7:
+                self.app.notify("Source must be 1-7", severity="error")
+                return
+            state = parts[1].lower() in ("on", "1", "true", "yes")
+            self._run_in_thread(lambda: self.app.client.set_monitor_source(source - 1, state))
+            self.app.notify(f"Monitor source {source} → {'ON' if state else 'OFF'}")
+
+        self._prompt_input("Set Sigma monitor source:", "1 on", on_input)
+
+    def _cmd_dim(self) -> None:
+        if not self._require_connected():
+            return
+
+        def on_input(value: str) -> None:
+            try:
+                level = float(value.strip())
+            except ValueError:
+                self.app.notify("Dim level must be a float", severity="error")
+                return
+            if not 0.0 <= level <= 1.0:
+                self.app.notify("Dim level must be 0.0-1.0", severity="error")
+                return
+            self._run_in_thread(lambda: self.app.client.set_dim(level))
+            self.app.notify(f"Dim level → {level:.3f}")
+
+        self._prompt_input("Set Sigma dim level:", "0.400", on_input)
+
     # --- Navigation ---
 
     def _cmd_show_channels(self) -> None:
@@ -612,6 +821,15 @@ class ConsoleCmdProvider(Provider):
 
     def _cmd_show_settings(self) -> None:
         self.app.action_show_tab("settings")
+
+    def _cmd_show_monitor(self) -> None:
+        self.app.action_show_tab("monitor")
+
+    def _cmd_show_console(self) -> None:
+        self.app.action_show_tab("console")
+
+    def _cmd_show_notes(self) -> None:
+        self.app.action_show_tab("notes")
 
     # --- App ---
 

@@ -1,4 +1,4 @@
-"""Secondary tab view widgets for the SSL Matrix TUI.
+"""Secondary tab view widgets for the SSL console TUI.
 
 Provides read-only views of console routing, saved session templates,
 and console settings (DAW layers, automation mode, split config).
@@ -137,3 +137,127 @@ class SettingsView(Static):
             lines.append(f"  Right layers: {right}")
 
         self.update("\n".join(lines))
+
+
+class SigmaChannelsView(Static):
+    """Read-only Sigma channel dashboard."""
+
+    def __init__(self, **kwargs):
+        super().__init__("Loading Sigma channels...", **kwargs)
+
+    def update_from(self, snapshot: dict) -> None:
+        channels = snapshot.get("channels", [])
+        lines = [
+            "[bold]Sigma Channels[/bold]",
+            "",
+            " Ch  Name        Fader    Pan   Solo  Mute Phase",
+            " -----------------------------------------------",
+        ]
+        for ch in channels:
+            lines.append(
+                f" {ch['number']:>2}  "
+                f"{(ch.get('name') or '—')[:10]:<10}  "
+                f"{ch.get('fader', 0.0):>5.3f}  "
+                f"{ch.get('pan', 0.0):>+5.2f}   "
+                f"{'ON' if ch.get('solo') else '--':>3}   "
+                f"{'ON' if ch.get('mute') else '--':>3}   "
+                f"{'ON' if ch.get('phase') else '--':>3}"
+            )
+        self.update("\n".join(lines))
+
+
+class SigmaMonitorView(Static):
+    """Read-only Sigma monitor/headphone dashboard."""
+
+    def __init__(self, **kwargs):
+        super().__init__("Loading Sigma monitor state...", **kwargs)
+
+    def update_from(self, snapshot: dict) -> None:
+        monitor = snapshot.get("monitor", {})
+        headphone = snapshot.get("headphone", {})
+        lines = ["[bold]Monitor[/bold]", ""]
+        for idx, enabled in enumerate(monitor.get("sources", []), start=1):
+            lines.append(f"  Source {idx}: {'ON' if enabled else 'OFF'}")
+        lines.extend(
+            [
+                "",
+                f"  Dim level:       {monitor.get('dim_level', 0.0):.3f}",
+                f"  Secondary dim:   {monitor.get('secondary_dim', 0.0):.3f}",
+                "",
+                "[bold]Headphone[/bold]",
+                "",
+            ]
+        )
+        for idx, enabled in enumerate(headphone.get("sources", []), start=1):
+            lines.append(f"  HP Source {idx}: {'ON' if enabled else 'OFF'}")
+        self.update("\n".join(lines))
+
+
+class SigmaConsoleView(Static):
+    """Read-only Sigma console overview."""
+
+    def __init__(self, **kwargs):
+        super().__init__("Loading Sigma console state...", **kwargs)
+
+    def update_from(self, snapshot: dict) -> None:
+        insert = snapshot.get("insert", {})
+        level = snapshot.get("level", {})
+        misc = snapshot.get("misc", {})
+        network = snapshot.get("network", {})
+        heartbeat_age = snapshot.get("heartbeat_age")
+        heartbeat = "never" if heartbeat_age in (None, float("inf")) else f"{heartbeat_age:.1f}s"
+        lines = [
+            "[bold]Console[/bold]",
+            "",
+            f"  Online:          {snapshot.get('online', False)}",
+            f"  Address:         {snapshot.get('console_ip') or '(unknown)'}",
+            f"  Heartbeat:       {heartbeat}",
+            "",
+            "[bold]Insert[/bold]",
+            "",
+            f"  Insert A:        {insert.get('insert_a', 0)}",
+            f"  Insert B:        {insert.get('insert_b', 0)}",
+            f"  Insert A SUM:    {insert.get('insert_a_sum', False)}",
+            f"  Insert B SUM:    {insert.get('insert_b_sum', False)}",
+            "",
+            "[bold]Level / Misc[/bold]",
+            "",
+            f"  Meter mode:      {level.get('meter_mode', 0)}",
+            f"  Level value:     {level.get('level_value', 0.0):.3f}",
+            f"  Level fader:     {level.get('level_fader', 0.0):.3f}",
+            f"  Talkback mode:   {misc.get('talkback_mode', 0)}",
+            f"  Oscillator:      {misc.get('oscillator', False)}",
+            f"  Listenback:      {misc.get('listenback', False)}",
+            f"  DAW control:     {misc.get('daw_control', 0)}",
+            "",
+            "[bold]Network[/bold]",
+            "",
+            f"  Master/slave:    {network.get('master_slave', False)}",
+            f"  IP:              {network.get('ip', '(unknown)')}",
+            f"  Subnet:          {network.get('subnet', '(unknown)')}",
+        ]
+        self.update("\n".join(lines))
+
+
+class SigmaNotesView(Static):
+    """Static Sigma release caveats and operator notes."""
+
+    def __init__(self, **kwargs):
+        super().__init__("", **kwargs)
+
+    def on_mount(self) -> None:
+        self.update(
+            "[bold]Sigma Notes[/bold]\n\n"
+            "  Mode:          experimental\n"
+            "  Validation:    reverse-engineered, not hardware-validated\n"
+            "  Safe first tests:\n"
+            "    1. rename a channel\n"
+            "    2. move one fader\n"
+            "    3. toggle solo or mute\n"
+            "    4. toggle one monitor source\n\n"
+            "  If connection fails:\n"
+            "    - verify the Sigma IP address\n"
+            "    - verify the Sigma UDP port for your unit\n"
+            "    - prefer a trusted local studio LAN\n\n"
+            "  Use the command palette for live Sigma control."
+        )
