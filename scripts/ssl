@@ -1,7 +1,6 @@
 #!/bin/bash
-# Launch ssl-matrix-client from anywhere.
+# Launch ssl-console from anywhere.
 # Usage: ssl          -> REPL
 #        ssl tui      -> Terminal UI
 #        ssl channels -> one-shot command
-cd "$(dirname "$0")/.." || exit 1
-exec python3 -m ssl-matrix-client "$@"
+exec ssl-console "$@"

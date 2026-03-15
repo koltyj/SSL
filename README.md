@@ -52,12 +52,14 @@ ssl-console --console sigma sigma_channels
 ssl-console -v status
 ```
 
-Or install from source:
+Or install from source (in a virtual environment):
 
 ```bash
 git clone https://github.com/koltyj/SSL.git
 cd SSL
-pip install ".[dev]"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install .
 ```
 
 Matrix defaults to IP `192.168.1.2` on UDP port `50081`. Sigma defaults to IP `192.168.1.201` and currently defaults to port `50081` in this client, but that Sigma port remains inferred rather than hardware-validated. Pass `--ip` and/or `--port` to override.
