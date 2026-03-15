@@ -28,20 +28,26 @@ This project is a from-scratch Python replacement, reverse-engineered from the S
 ## Quick Start
 
 ```bash
+pip install ssl-console-client
+
+# Launch the REPL
+ssl-console
+
+# Launch the TUI
+ssl-console tui
+
+# One-shot commands
+ssl-console channels
+ssl-console --ip 10.0.0.50 layers
+ssl-console -v status
+```
+
+Or install from source:
+
+```bash
 git clone https://github.com/koltyj/SSL.git
 cd SSL
 pip install -e ".[dev]"
-
-# Launch the REPL
-python3 -m ssl-matrix-client
-
-# Launch the TUI
-python3 -m ssl-matrix-client tui
-
-# One-shot commands
-python3 -m ssl-matrix-client channels
-python3 -m ssl-matrix-client --ip 10.0.0.50 layers
-python3 -m ssl-matrix-client -v status
 ```
 
 The console's default IP is `192.168.1.2` on UDP port `50081`. Pass `--ip` to override.

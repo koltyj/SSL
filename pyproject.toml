@@ -1,11 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "ssl-matrix-client"
+name = "ssl-console-client"
 version = "0.1.0"
+description = "Reverse-engineered Python client for controlling SSL mixing consoles (Matrix, Duality, AWS) over Ethernet"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.9"
+authors = [{ name = "Kolton Jacobs" }]
+keywords = ["ssl", "mixing-console", "audio", "matrix", "duality", "aws", "udp", "remote-control"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Sound/Audio :: Mixers",
+]
 dependencies = ["textual>=0.80.0"]
+
+[project.urls]
+Homepage = "https://github.com/koltyj/SSL"
+Repository = "https://github.com/koltyj/SSL"
+Issues = "https://github.com/koltyj/SSL/issues"
+
+[project.scripts]
+ssl-console = "ssl_matrix_client.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7,<9", "pytest-asyncio>=0.23", "ruff>=0.9", "pre-commit>=3,<5"]
+
+[tool.hatch.build.targets.sdist]
+include = ["ssl-matrix-client/"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["ssl-matrix-client"]
+
+[tool.hatch.build.targets.wheel.sources]
+"ssl-matrix-client" = "ssl_matrix_client"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
