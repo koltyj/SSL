@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ssl-console-client"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reverse-engineered Python client for controlling SSL mixing consoles (Matrix, Duality, AWS, Sigma) over Ethernet"
 readme = "README.md"
 license = "MIT"
