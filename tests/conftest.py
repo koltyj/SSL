@@ -25,6 +25,9 @@ for sub in [
     "tui_widgets",
     "tui_commands",
     "tui_views",
+    "sigma_protocol",
+    "sigma_models",
+    "sigma_client",
 ]:
     try:
         mod = importlib.import_module(f"ssl-matrix-client.{sub}")
@@ -46,6 +49,7 @@ for h in [
     "chan_presets",
     "xpatch",
     "softkeys",
+    "sigma",
 ]:
     mod = importlib.import_module(f"ssl-matrix-client.handlers.{h}")
     sys.modules[f"ssl_matrix_client.handlers.{h}"] = mod

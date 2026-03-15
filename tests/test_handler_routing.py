@@ -1,7 +1,7 @@
 """Tests for handlers/routing.py."""
 
 import struct
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from conftest import (
@@ -234,6 +234,7 @@ class TestClientStereoInsert:
 class TestStereoCliCommand:
     def _make_cli(self):
         cli = SSLMatrixCLI.__new__(SSLMatrixCLI)
+        cli._console_type = "matrix"
         cli.client = MagicMock()
         cli.client.state.desk.online = True
         cli._connected = True
@@ -272,3 +273,21 @@ class TestStereoCliCommand:
         cli._connected = False
         cli.do_stereo("1 2")
         cli.client.set_stereo_insert.assert_not_called()
+
+
+class TestSigmaCliGuardrails:
+    def test_tui_launches_sigma_app(self):
+        cli = SSLMatrixCLI.__new__(SSLMatrixCLI)
+        cli._console_type = "sigma"
+        cli.client = MagicMock()
+        cli.client.console_ip = "192.168.1.201"
+        cli._connected = False
+
+        fake_app = MagicMock()
+
+        with patch("ssl_matrix_client.tui.SSLApp", return_value=fake_app) as mock_app_cls:
+            result = cli.do_tui("")
+
+        mock_app_cls.assert_called_once_with(console_ip="192.168.1.201", console_type="sigma")
+        fake_app.run.assert_called_once()
+        assert result is True

@@ -56,6 +56,13 @@ CONSOLE_PROFILES: dict[str, ConsoleProfile] = {
         num_channels=48,
         master_fader_offset=2,
     ),
+    "Sigma": ConsoleProfile(
+        product_key="Sigma",
+        display_name="SSL Sigma",
+        num_channels=16,
+        has_delta=True,
+        alt_names=("Sigma Delta", "SigmaDelta"),
+    ),
 }
 
 DEFAULT_PROFILE = CONSOLE_PROFILES["Matrix"]

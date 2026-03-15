@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""CLI interface for SSL Matrix console control.
+"""CLI interface for SSL console control (Matrix + Sigma).
 
 Interactive REPL (cmd.Cmd) and one-shot mode (argparse).
 
 Usage:
-    ssl-console                           # interactive REPL
+    ssl-console                           # interactive REPL (Matrix)
+    ssl-console --console sigma           # interactive REPL (Sigma, experimental)
     ssl-console channels                  # one-shot: list channels
     ssl-console --ip 10.0.0.5 layers      # custom IP
 """
@@ -18,6 +19,8 @@ import time
 
 from .client import HEARTBEAT_TIMEOUT, SSLMatrixClient
 from .protocol import PORT, PROTOCOL_NAMES
+from .sigma_client import SSLSigmaClient
+from .sigma_protocol import SIGMA_PORT
 from .templates import (
     TEMPLATE_DIR,
     build_apply_commands,
@@ -31,25 +34,62 @@ from .templates import (
 
 
 class SSLMatrixCLI(cmd.Cmd):
-    """Interactive CLI for SSL Matrix console."""
+    """Interactive CLI for SSL console (Matrix + Sigma)."""
 
     prompt = "ssl> "
-    intro = "SSL Matrix Client. Type 'help' for commands, 'connect' to start."
 
-    def __init__(self, ip="192.168.1.2", port=PORT):
+    def __init__(self, ip="192.168.1.2", port=PORT, console_type="matrix"):
         super().__init__()
-        self.client = SSLMatrixClient(console_ip=ip, port=port)
+        self._console_type = console_type
+        if console_type == "sigma":
+            self.client = SSLSigmaClient(console_ip=ip, port=port)
+            self.intro = (
+                "SSL Sigma Client (EXPERIMENTAL). Type 'help' for commands, 'connect' to start."
+            )
+        else:
+            self.client = SSLMatrixClient(console_ip=ip, port=port)
+            self.intro = "SSL Matrix Client. Type 'help' for commands, 'connect' to start."
         self._connected = False
 
+    @property
+    def _is_sigma(self):
+        return self._console_type == "sigma"
+
     def _require_connected(self):
+        if self._is_sigma:
+            if not self._connected or not self.client.state.online:
+                print("Not connected. Run 'connect' first.")
+                return False
+            return True
         if not self._connected or not self.client.state.desk.online:
             print("Not connected. Run 'connect' first.")
+            return False
+        return True
+
+    def _require_matrix(self):
+        """Check that we are connected to a Matrix console."""
+        if not self._require_connected():
+            return False
+        if self._is_sigma:
+            print("This command is only available on Matrix consoles.")
+            return False
+        return True
+
+    def _require_sigma(self):
+        """Check that we are connected to a Sigma console."""
+        if not self._require_connected():
+            return False
+        if not self._is_sigma:
+            print("This command is only available on Sigma consoles.")
             return False
         return True
 
     def _require_feature(self, feature_attr, feature_name):
         """Check connection and that the console supports a feature."""
         if not self._require_connected():
+            return False
+        if self._is_sigma:
+            print(f"{feature_name} is not available on Sigma.")
             return False
         profile = self.client.state.profile
         if not getattr(profile, feature_attr, False):
@@ -67,7 +107,7 @@ class SSLMatrixCLI(cmd.Cmd):
             self._connected = False
         from .tui import SSLApp
 
-        app = SSLApp(console_ip=self.client.console_ip)
+        app = SSLApp(console_ip=self.client.console_ip, console_type=self._console_type)
         app.run()
         return True  # Exit REPL after TUI closes
 
@@ -80,23 +120,31 @@ class SSLMatrixCLI(cmd.Cmd):
             return
         print(f"Connecting to {self.client.console_ip}:{self.client.port}...")
         self.client.connect()
-        if self.client.wait_online(timeout=5):
-            d = self.client.state.desk
-            print(f"Connected to {d.product_name} '{d.console_name}'")
-            print(f"  Firmware: {d.firmware}")
-            print(f"  Serial:   {d.serial}")
-            print(f"  Built:    {d.built_str} {d.time_str}")
-            print("Syncing state...")
-            try:
-                self.client.request_sync()
+        if self._is_sigma:
+            if self.client.wait_online(timeout=5):
+                print("Connected to SSL Sigma (experimental)")
                 self._connected = True
-                print("Sync complete.")
-            except Exception as e:
-                print(f"Sync failed: {e}")
+            else:
+                print("Connection timeout. Is the Sigma on and reachable?")
                 self.client.disconnect()
         else:
-            print("Connection timeout. Is the console on and reachable?")
-            self.client.disconnect()
+            if self.client.wait_online(timeout=5):
+                d = self.client.state.desk
+                print(f"Connected to {d.product_name} '{d.console_name}'")
+                print(f"  Firmware: {d.firmware}")
+                print(f"  Serial:   {d.serial}")
+                print(f"  Built:    {d.built_str} {d.time_str}")
+                print("Syncing state...")
+                try:
+                    self.client.request_sync()
+                    self._connected = True
+                    print("Sync complete.")
+                except Exception as e:
+                    print(f"Sync failed: {e}")
+                    self.client.disconnect()
+            else:
+                print("Connection timeout. Is the console on and reachable?")
+                self.client.disconnect()
 
     def do_disconnect(self, arg):
         """Disconnect from the console."""
@@ -111,6 +159,20 @@ class SSLMatrixCLI(cmd.Cmd):
         """Show console status."""
         if not self._connected:
             print("Not connected.")
+            return
+        if self._is_sigma:
+            with self.client._lock:
+                s = self.client.state
+                online = s.online
+                ip = s.console_ip
+                hb_age = s.heartbeat_age
+            print("Console:    SSL Sigma (experimental)")
+            print(f"Address:    {ip or '(unknown)'}")
+            print(f"Online:     {online}")
+            if hb_age == float("inf"):
+                print("Heartbeat:  never received")
+            else:
+                print(f"Heartbeat:  {hb_age:.1f}s ago")
             return
         with self.client._lock:
             d = self.client.state.desk
@@ -142,6 +204,10 @@ class SSLMatrixCLI(cmd.Cmd):
     def do_channels(self, arg):
         """List all channel names."""
         if not self._require_connected():
+            return
+        if self._is_sigma:
+            # Sigma get_channels returns (number, name, fader, pan)
+            self.do_sigma_channels(arg)
             return
         chans = self.client.get_channels()
         if not chans:
@@ -1099,6 +1165,255 @@ class SSLMatrixCLI(cmd.Cmd):
             "Use the console surface buttons directly for SuperCue/Auto-Mon control."
         )
 
+    # --- Sigma-specific commands ---
+
+    def do_sigma_channels(self, arg):
+        """[Sigma] Show channel names and state."""
+        if not self._require_sigma():
+            return
+        with self.client._lock:
+            channels = list(self.client.state.channels)
+        print(
+            f"{'Ch':>3s} {'Name':8s} {'Fader':>6s} {'Pan':>5s} {'Solo':>5s} {'Mute':>5s} {'Phase':>5s}"
+        )
+        print("-" * 45)
+        for ch in channels:
+            solo_str = " ON" if ch.solo else "  -"
+            mute_str = " ON" if ch.mute else "  -"
+            phase_str = " ON" if ch.phase else "  -"
+            print(
+                f"{ch.number:3d} {ch.name:8s} {ch.fader:6.3f} {ch.pan:+5.2f} {solo_str:>5s} {mute_str:>5s} {phase_str:>5s}"
+            )
+
+    def do_sigma_fader(self, arg):
+        """[Sigma] Set fader level. Usage: sigma_fader <channel> <0.0-1.0>"""
+        if not self._require_sigma():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_fader <channel_1-16> <level_0.0-1.0>")
+            return
+        try:
+            channel = int(parts[0])
+            value = float(parts[1])
+        except ValueError:
+            print("Channel must be int, level must be float.")
+            return
+        if not 1 <= channel <= 16:
+            print("Channel must be 1-16.")
+            return
+        self.client.set_fader(channel, value)
+        print(f"Ch{channel} fader -> {value:.3f}")
+
+    def do_sigma_pan(self, arg):
+        """[Sigma] Set pan position. Usage: sigma_pan <channel> <-1.0 to 1.0>"""
+        if not self._require_sigma():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_pan <channel_1-16> <pan_-1.0 to 1.0>")
+            return
+        try:
+            channel = int(parts[0])
+            value = float(parts[1])
+        except ValueError:
+            print("Channel must be int, pan must be float.")
+            return
+        if not 1 <= channel <= 16:
+            print("Channel must be 1-16.")
+            return
+        self.client.set_pan(channel, value)
+        print(f"Ch{channel} pan -> {value:+.2f}")
+
+    def do_sigma_solo(self, arg):
+        """[Sigma] Toggle solo. Usage: sigma_solo <channel> <on|off>"""
+        if not self._require_sigma():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_solo <channel_1-16> <on|off>")
+            return
+        try:
+            channel = int(parts[0])
+        except ValueError:
+            print("Channel must be int.")
+            return
+        if not 1 <= channel <= 16:
+            print("Channel must be 1-16.")
+            return
+        on = parts[1].lower() in ("on", "1", "true", "yes")
+        self.client.set_solo(channel, on)
+        print(f"Ch{channel} solo -> {'ON' if on else 'OFF'}")
+
+    def do_sigma_mute(self, arg):
+        """[Sigma] Toggle mute. Usage: sigma_mute <channel> <on|off>"""
+        if not self._require_sigma():
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_mute <channel_1-16> <on|off>")
+            return
+        try:
+            channel = int(parts[0])
+        except ValueError:
+            print("Channel must be int.")
+            return
+        if not 1 <= channel <= 16:
+            print("Channel must be 1-16.")
+            return
+        on = parts[1].lower() in ("on", "1", "true", "yes")
+        self.client.set_mute(channel, on)
+        print(f"Ch{channel} mute -> {'ON' if on else 'OFF'}")
+
+    def do_sigma_name(self, arg):
+        """[Sigma] Set channel name. Usage: sigma_name <channel> <name>"""
+        if not self._require_sigma():
+            return
+        parts = arg.split(None, 1)
+        if len(parts) < 2:
+            print("Usage: sigma_name <channel_1-16> <name>")
+            return
+        try:
+            channel = int(parts[0])
+        except ValueError:
+            print("Channel must be int.")
+            return
+        if not 1 <= channel <= 16:
+            print("Channel must be 1-16.")
+            return
+        self.client.set_channel_name(channel, parts[1])
+        print(f"Ch{channel} name -> '{parts[1]}'")
+
+    def do_sigma_monitor(self, arg):
+        """[Sigma] Show/set monitor sources. Usage: sigma_monitor [source_1-7 on|off]"""
+        if not self._require_sigma():
+            return
+        if not arg.strip():
+            with self.client._lock:
+                sources = self.client.state.monitor.sources
+                dim = self.client.state.monitor.dim_level
+            print("Monitor sources:")
+            for i, on in enumerate(sources):
+                print(f"  Source {i + 1}: {'ON' if on else 'OFF'}")
+            print(f"  Dim level: {dim:.3f}")
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_monitor <source_1-7> <on|off>")
+            return
+        try:
+            source = int(parts[0])
+        except ValueError:
+            print("Source must be int.")
+            return
+        if not 1 <= source <= 7:
+            print("Source must be 1-7.")
+            return
+        on = parts[1].lower() in ("on", "1", "true", "yes")
+        self.client.set_monitor_source(source - 1, on)
+        print(f"Monitor source {source} -> {'ON' if on else 'OFF'}")
+
+    def do_sigma_dim(self, arg):
+        """[Sigma] Set dim level. Usage: sigma_dim <0.0-1.0>"""
+        if not self._require_sigma():
+            return
+        if not arg.strip():
+            with self.client._lock:
+                dim = self.client.state.dim.dim_level
+            print(f"Dim level: {dim:.3f}")
+            return
+        try:
+            value = float(arg.strip())
+        except ValueError:
+            print("Level must be a float.")
+            return
+        self.client.set_dim(value)
+        print(f"Dim level -> {value:.3f}")
+
+    def do_sigma_headphone(self, arg):
+        """[Sigma] Show/set headphone sources. Usage: sigma_headphone [source_1-4 on|off]"""
+        if not self._require_sigma():
+            return
+        if not arg.strip():
+            with self.client._lock:
+                sources = self.client.state.headphone.sources
+            print("Headphone sources:")
+            for i, on in enumerate(sources):
+                print(f"  Source {i + 1}: {'ON' if on else 'OFF'}")
+            return
+        parts = arg.split()
+        if len(parts) < 2:
+            print("Usage: sigma_headphone <source_1-4> <on|off>")
+            return
+        try:
+            source = int(parts[0])
+        except ValueError:
+            print("Source must be int.")
+            return
+        if not 1 <= source <= 4:
+            print("Source must be 1-4.")
+            return
+        on = parts[1].lower() in ("on", "1", "true", "yes")
+        self.client.set_headphone_source(source - 1, on)
+        print(f"Headphone source {source} -> {'ON' if on else 'OFF'}")
+
+    def do_sigma_state(self, arg):
+        """[Sigma] Dump full Sigma console state as JSON."""
+        if not self._require_sigma():
+            return
+        with self.client._lock:
+            s = self.client.state
+            out = {
+                "online": s.online,
+                "console_ip": s.console_ip,
+                "heartbeat_age": None
+                if s.heartbeat_age == float("inf")
+                else round(s.heartbeat_age, 1),
+                "channels": [
+                    {
+                        "number": ch.number,
+                        "name": ch.name,
+                        "fader": round(ch.fader, 4),
+                        "pan": round(ch.pan, 4),
+                        "solo": ch.solo,
+                        "mute": ch.mute,
+                        "phase": ch.phase,
+                    }
+                    for ch in s.channels
+                ],
+                "monitor": {
+                    "sources": s.monitor.sources[:],
+                    "dim_level": round(s.monitor.dim_level, 4),
+                    "secondary_dim": round(s.monitor.secondary_dim, 4),
+                },
+                "headphone": {"sources": s.headphone.sources[:]},
+                "insert": {
+                    "insert_a": s.insert.insert_a,
+                    "insert_b": s.insert.insert_b,
+                    "insert_a_sum": s.insert.insert_a_sum,
+                    "insert_b_sum": s.insert.insert_b_sum,
+                },
+                "level": {
+                    "meter_mode": s.level.meter_mode,
+                    "level_toggle": s.level.level_toggle,
+                    "level_value": round(s.level.level_value, 4),
+                    "level_fader": round(s.level.level_fader, 4),
+                },
+                "misc": {
+                    "talkback_mode": s.misc.talkback_mode,
+                    "oscillator": s.misc.oscillator,
+                    "listenback": s.misc.listenback,
+                    "connection_status": s.misc.connection_status,
+                    "daw_control": s.misc.daw_control,
+                },
+                "network": {
+                    "master_slave": s.network.master_slave,
+                    "ip": ".".join(str(o) for o in s.network.ip_octets),
+                    "subnet": ".".join(str(o) for o in s.network.subnet_octets),
+                },
+            }
+        print(json.dumps(out, indent=2))
+
     # --- Templates ---
 
     def do_template(self, arg):
@@ -1636,13 +1951,21 @@ class SSLMatrixCLI(cmd.Cmd):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="SSL Matrix Console Client",
+        description="SSL Console Client (Matrix + Sigma)",
         prog="ssl-console",
     )
     parser.add_argument(
         "--ip", default="192.168.1.2", help="Console IP address (default: 192.168.1.2)"
     )
-    parser.add_argument("--port", type=int, default=PORT, help=f"UDP port (default: {PORT})")
+    parser.add_argument(
+        "--port", type=int, default=None, help="UDP port (auto-detected from console type)"
+    )
+    parser.add_argument(
+        "--console",
+        choices=["matrix", "sigma"],
+        default="matrix",
+        help="Console type: matrix (default), sigma (experimental)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     parser.add_argument("command", nargs="*", help="One-shot command (e.g. 'channels', 'layers')")
     args = parser.parse_args()
@@ -1652,7 +1975,12 @@ def main():
     else:
         logging.basicConfig(level=logging.WARNING)
 
-    cli = SSLMatrixCLI(ip=args.ip, port=args.port)
+    # Auto-detect port from console type if not specified
+    port = args.port
+    if port is None:
+        port = SIGMA_PORT if args.console == "sigma" else PORT
+
+    cli = SSLMatrixCLI(ip=args.ip, port=port, console_type=args.console)
 
     if args.command:
         # One-shot mode: connect, run command, exit
@@ -1662,7 +1990,8 @@ def main():
                 print("Connection timeout.", file=sys.stderr)
                 sys.exit(1)
             cli._connected = True
-            cli.client.request_sync()
+            if not cli._is_sigma:
+                cli.client.request_sync()
 
             cmd_name = args.command[0]
             cmd_args = " ".join(args.command[1:])
