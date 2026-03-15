@@ -4,9 +4,9 @@
 Interactive REPL (cmd.Cmd) and one-shot mode (argparse).
 
 Usage:
-    python3 -m ssl-matrix-client                  # interactive REPL
-    python3 -m ssl-matrix-client channels          # one-shot: list channels
-    python3 -m ssl-matrix-client --ip 10.0.0.5 layers  # custom IP
+    ssl-console                           # interactive REPL
+    ssl-console channels                  # one-shot: list channels
+    ssl-console --ip 10.0.0.5 layers      # custom IP
 """
 
 import argparse
@@ -1637,7 +1637,7 @@ class SSLMatrixCLI(cmd.Cmd):
 def main():
     parser = argparse.ArgumentParser(
         description="SSL Matrix Console Client",
-        prog="ssl-matrix-client",
+        prog="ssl-console",
     )
     parser.add_argument(
         "--ip", default="192.168.1.2", help="Console IP address (default: 192.168.1.2)"

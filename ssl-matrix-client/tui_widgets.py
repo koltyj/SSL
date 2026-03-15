@@ -161,9 +161,13 @@ class ChannelView(HorizontalScroll):
         current = len(list(self.query(ChannelStrip)))
         if current == n:
             return
-        self.remove_children()
-        for i in range(1, n + 1):
-            self.mount(ChannelStrip(i))
+        if current < n:
+            for i in range(current + 1, n + 1):
+                self.mount(ChannelStrip(i))
+        else:
+            strips = sorted(self.query(ChannelStrip), key=lambda strip: strip.channel_num)
+            for strip in strips[n:]:
+                strip.remove()
         self._num_channels = n
 
     def update_from(self, snapshot: dict) -> None:

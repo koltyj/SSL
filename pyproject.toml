@@ -32,15 +32,35 @@ dependencies = ["textual>=0.80.0"]
 Homepage = "https://github.com/koltyj/SSL"
 Repository = "https://github.com/koltyj/SSL"
 Issues = "https://github.com/koltyj/SSL/issues"
+Documentation = "https://github.com/koltyj/SSL#readme"
+Changelog = "https://github.com/koltyj/SSL/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ssl-console = "ssl_matrix_client.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7,<9", "pytest-asyncio>=0.23", "ruff>=0.9", "pre-commit>=3,<5"]
+dev = [
+    "build>=1,<2",
+    "pre-commit>=3,<5",
+    "pytest>=7,<9",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.9",
+    "twine>=5,<7",
+]
 
 [tool.hatch.build.targets.sdist]
-include = ["ssl-matrix-client/"]
+include = [
+    "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "pyproject.toml",
+    "ssl-matrix-client/",
+    "tests/",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["ssl-matrix-client"]

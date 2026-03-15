@@ -4,15 +4,17 @@
 
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-274%20passing-brightgreen)
+![CI](https://github.com/koltyj/SSL/actions/workflows/ci.yml/badge.svg)
 
-![TUI Screenshot](docs/screenshots/tui-channels.svg)
+![TUI Screenshot](https://raw.githubusercontent.com/koltyj/SSL/main/docs/screenshots/tui-channels.svg)
 
 ## What is this
 
 SSL's large-format analog consoles (Matrix, Duality, AWS 900, AWS 924/948) have digital control capabilities -- flying faders, DAW integration, insert routing, and session recall. SSL's official control software (MatrixRemote) is a Java application that hasn't been maintained for modern macOS.
 
 This project is a from-scratch Python replacement, reverse-engineered from the SSL MatrixRemote protocol and live packet captures. It speaks the console's native UDP protocol and auto-detects which console model is connected, exposing available features through a terminal UI, interactive REPL, and scriptable CLI.
+
+This is an independent community project and is not affiliated with or endorsed by Solid State Logic.
 
 ## Features
 
@@ -22,7 +24,7 @@ This project is a from-scratch Python replacement, reverse-engineered from the S
 - **Session templates** -- save, load, diff, and apply full console state snapshots
 - **Connection health monitoring** with auto-reconnect and heartbeat tracking
 - **Interactive REPL** and one-shot CLI mode for scripting
-- **274 unit tests** with full handler coverage
+- **CI-validated lint, build, protocol, CLI, template, and TUI smoke checks**
 - **Minimal dependencies** -- Python stdlib + [Textual](https://github.com/Textualize/textual) for the TUI
 
 ## Quick Start
@@ -51,6 +53,8 @@ pip install -e ".[dev]"
 ```
 
 The console's default IP is `192.168.1.2` on UDP port `50081`. Pass `--ip` to override.
+
+The client assumes the console is reachable on a trusted local network. See [SECURITY.md](SECURITY.md) before exposing any control host outside a studio LAN.
 
 ## Terminal UI
 
@@ -195,6 +199,11 @@ Matrix tested with firmware V3.0/5. Other consoles and firmware versions may wor
 ## Development
 
 ```bash
+# Create a dev environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
 # Run all tests
 python3 -m pytest tests/ -v
 
@@ -202,14 +211,25 @@ python3 -m pytest tests/ -v
 python3 -m pytest tests/test_protocol.py -v
 
 # Lint and format
-ruff check ssl-matrix-client/ tests/
-ruff format ssl-matrix-client/ tests/
+python3 -m ruff check ssl-matrix-client tests
+python3 -m ruff format ssl-matrix-client tests
+
+# Build distribution artifacts
+python3 -m build
 
 # Pre-commit hooks (ruff, trailing whitespace, EOF fixer, debug statements)
 pre-commit run --all-files
 ```
 
-Tests use an import shim in `tests/conftest.py` to handle the hyphenated package directory. Tool configuration lives in `pyproject.toml`.
+Tests use an import shim in `tests/conftest.py` to handle the hyphenated package directory. CI runs lint, tests, and packaging checks on Python 3.9 through 3.13. Tool configuration lives in `pyproject.toml`.
+
+## Community
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) -- development setup, PR expectations, and test commands
+- [SUPPORT.md](SUPPORT.md) -- how to ask for help or file actionable bug reports
+- [SECURITY.md](SECURITY.md) -- security model and private reporting guidance
+- [CHANGELOG.md](CHANGELOG.md) -- release history
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) -- expected community behavior
 
 ## License
 

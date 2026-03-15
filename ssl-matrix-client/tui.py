@@ -342,7 +342,7 @@ class SSLApp(App):
 def main(argv=None) -> None:
     """Entry point for `python3 -m ssl-matrix-client tui [--ip IP]`."""
     parser = argparse.ArgumentParser(
-        prog="ssl-matrix-client tui",
+        prog="ssl-console tui",
         description="SSL Matrix Console TUI",
     )
     parser.add_argument(

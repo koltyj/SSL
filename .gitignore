@@ -11,8 +11,10 @@ build/
 .mypy_cache/
 
 # IDE / editor
+.claude/
 .cursor/
 .vscode/
+CLAUDE.md
 
 # Internal tooling
 .juno_task/
