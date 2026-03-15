@@ -49,7 +49,7 @@ Or install from source:
 ```bash
 git clone https://github.com/koltyj/SSL.git
 cd SSL
-pip install -e ".[dev]"
+pip install ".[dev]"
 ```
 
 The console's default IP is `192.168.1.2` on UDP port `50081`. Pass `--ip` to override.
@@ -202,7 +202,7 @@ Matrix tested with firmware V3.0/5. Other consoles and firmware versions may wor
 # Create a dev environment
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install ".[dev]"
 
 # Run all tests
 python3 -m pytest tests/ -v
